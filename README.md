@@ -6,9 +6,14 @@ Before installing BEE, you should first prepare your media libraries. BEE is set
 
 **Set up your Drone hardware** in advance and connect each one to a display device. Drone devices must use VLC player with the HTTP API enabled and have the library common root path mounted in the OS. The web interface can generate systemctl .service files for each Drone, so if you are setting up your Drone in a Linux environment (on a Raspberry Pi for example), ensure that VLC is installed and use the generated .service file at a later step. 
 
-**Install dependencies**. If you are not using a preconfigured docker container, install python and the requirements.txt dependencies in the environment running BEE and ensure the environment has network access to the library common root path. 
-
 **Copy BEE files to desired path**. Copy all of the BEE operational files into a path in the python environment and configure web_app.py and hivemind.py to launch at boot. This will be your graphical interface for all necessary operations of BEE.
+
+**Set up Docker instance**. If you are going to run BEE from a Docker instance, get started by navigating to the directory containing the BEE files and run these commands:
+```docker build -t bee .```
+```docker run -v "$(pwd)":/bee -v [MEDIA LIBRARY ROOT PATH]:/libraries -d bee```
+Replace `[MEDIA LIBRARY ROOT PATH]` with the directory path to the root location of your media library. This will install dependencies from requirements.txt and start the web user interface. Once this is complete, skip down to the Configure Settings step.
+
+**Install dependencies**. If you are not using a preconfigured docker container, install python and the requirements.txt dependencies in the environment running BEE and ensure the environment has network access to the library common root path. 
 
 **Configure Settings**. Set the library paths and other user configured settings on the Settings page in the web interface.
 
