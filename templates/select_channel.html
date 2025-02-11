@@ -1,0 +1,41 @@
+{% extends 'layout.html' %}
+
+{% block title %}Select Channel - Channel Manager{% endblock %}
+
+{% block content %}
+<table>
+    <tbody id="channel-list">
+	<tr><td class="box firstcolumn yellow"></td><td class="box trispan yellow">Channels</td></tr>
+        {% for channel in channels %}
+            <tr>
+			<td class="topbox firstcolumn yellow">Ch. {{ channel }}</td>
+			<td class="box blue "><a href="{{ url_for('schedule', channel=channel) }}">View</a></td>
+			<td class="box blue "><a href="{{ url_for('edit_get', channel=channel) }}">Edit</a></td>
+			<td class="box blue "><a href="{{ url_for('edit', template_file=channel) }}">Template</a></td></tr>
+			<tr>
+			<td class="bottombox firstcolumn yellow"></td>
+			<td class="box blue "><a href="{{ url_for('last', channel=channel) }}">Last Episode</a></td>
+			<td class="box blue "><a href="{{ url_for('edit_details') }}">Details</a></td>
+			<td class="box red"><a href="{{ url_for('confirm_delete_channel', channel=channel) }}">DELETE</a></td>
+			</tr>
+        {% endfor %}
+		</tbody>
+		<tbody id="template-list">
+		<tr>
+			<td class="box firstcolumn yellow"></td><td class="box trispan yellow">Templates</td></tr>
+			{% for file in template_files %}
+        <tr>
+			<td class="box yellow firstcolumn smallfont">{{ file.split('.')[0] }}</td>
+			<td class="box blue"><a href="{{ url_for('edit', template_file=file) }}">EDIT</a></td>
+			<td class="box blue"><a href="{{ url_for('new_channel', template_file=file) }}">NEW CHANNEL</a></td>
+			<td class="box red"><a href="{{ url_for('confirm_delete_template', template_file=file) }}">DELETE</a></td>
+		</tr>
+			{% endfor %}
+		<tr>
+			<td class="box firstcolumn yellow">
+			<td class="box trispan"><a class="yellow" href="{{ url_for('new') }}">NEW TEMPLATE</a></td>
+
+		</tr>	
+		</tbody>
+</table>
+{% endblock %}

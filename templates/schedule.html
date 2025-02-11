@@ -1,0 +1,46 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+	{% for row in rows %}
+		{{row|safe}}
+	{% endfor %}
+    </table>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+	<script>setInterval(location.reload, 300000);</script>
+    <script>
+		var socket = io();
+
+
+        // Function to format time as HH:MM
+        function formatTime(date) {
+            var hours = date.getHours();
+            var minutes = date.getMinutes();
+            if (minutes < 10) {
+                minutes = '0' + minutes;
+            }
+            return hours + ':' + minutes;
+        }
+
+        // Update the current time cell and advance time cells
+        function updateScheduleTime() {
+            var currentTime = getCurrentTime();
+            document.getElementById("now-time").innerText = formatTime(currentTime);
+            for (var i = 1; i <= 5; i++) {
+                var nextTime = new Date(currentTime);
+                nextTime.setMinutes(nextTime.getMinutes() + 30 * i);
+                document.getElementById("time-" + i).innerText = formatTime(nextTime);
+            }
+        }
+
+
+
+        // Call updateScheduleTime function when the page loads
+        window.onload = function() {
+            updateScheduleTime();
+            setInterval(updateScheduleTime, 30000); // Update every 30 seconds
+        };
+		
+    </script>
+	
+{% endblock %}

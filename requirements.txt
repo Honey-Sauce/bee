@@ -1,0 +1,12 @@
+ffmpeg-python
+flask
+flask-socketio
+moviepy
+musicbrainzngs
+openai
+opencv-python
+psutil
+pycountry
+requests
+xmltodict
+yt-dlp

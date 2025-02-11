@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Broadcast Emulation Engine{% endblock %}</title>
+    <link href="{{ url_for('static', filename='excalibur.css') }}" rel="stylesheet" type="text/css" media="all">
+	<link rel="icon" href="{{ url_for('static', filename='beeico.png') }}" type="image/png">
+</head>
+<body>
+    <script>
+        function updateCurrentTime() {
+            var currentTimeElement = document.getElementById('current-time');
+            var now = new Date();
+
+            var hours = now.getHours().toString().padStart(2, '0');
+            var minutes = now.getMinutes().toString().padStart(2, '0');
+            var seconds = now.getSeconds().toString().padStart(2, '0');
+
+            var currentTimeString = hours + ':' + minutes + ':' + seconds;
+
+            currentTimeElement.textContent = currentTimeString;
+        }
+
+        // Update every second
+        setInterval(updateCurrentTime, 1000);
+
+        // Initial update
+        updateCurrentTime();
+		
+		function prevueText(channel_title, title_text, details_text, timedate_text, channel_number, thumb_path) {
+			prevueUnHide();
+			document.getElementById('channel-title').innerText = channel_title;
+			document.getElementById('title-text').innerText = title_text;
+			document.getElementById('details-text').innerText = details_text;
+			document.getElementById('time-date-text').innerText = timedate_text;
+			document.getElementById('channel-number').innerText = channel_number;
+			var prevueImage = document.getElementById('prevue-image');
+			if (thumb_path) {
+				var thumbUrl = thumb_path;
+				prevueImage.src = thumb_path;
+				//prevueImage.style.display = 'block'; // Ensure the image is visible
+			} else {
+				prevueImage.src = "/static/beeprev2.png"; // Hide the image if no URL is provided
+			}
+		}
+
+		function prevueHide() {
+			const element = document.getElementById('prevue-row');
+			const topElements = document.querySelectorAll('.top-row'); // Select all elements with the class "top-row"
+			
+			element.classList.add('hide');
+
+		}
+
+		function prevueUnHide() {
+			const element = document.getElementById('prevue-row');
+			const topElements = document.querySelectorAll('.top-row'); // Select all elements with the class "top-row"
+
+			element.classList.remove('hide');
+			setTimeout(() => {
+				element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}, 100);
+
+
+		}
+
+		function toggleHide(elementId) {
+			const element = document.getElementById(elementId);
+			element.classList.toggle("hide");
+		}
+
+		function clientSelect(channel = 'undefined') {
+			console.log("clientSelect function called with channel:", channel);
+			const urlParams = new URLSearchParams(window.location.search);
+			const kioskMode = urlParams.get("kiosk");
+			console.log("Kiosk Mode:", kioskMode);
+			if (kioskMode && kioskMode != 'all') {
+				var selectedCategory = kioskMode;
+				if (channel == 'undefined') {
+					stopBeehive(selectedCategory);
+				} else if (channel == 'live') {
+					prevueUnHide();
+					
+					var all_live_data = {{ live_onload | tojson }};
+					console.log(all_live_data);
+					if (all_live_data.hasOwnProperty(selectedCategory)) {
+						var live_data = all_live_data[selectedCategory];
+						console.log(live_data);
+						prevueText(live_data['channel-title'], live_data['title-text'], live_data['details-text'], live_data['time-date-text'], 'CHANNEL '+live_data['channel-number'], live_data['prevue-image']);
+					} else {
+						prevueText('NOT PLAYING', selectedCategory, 'The selected Drone is not active.', '', '', '');
+					}
+				} else {
+					// Call the startBeehive function with the channel and selected category
+					startBeehive(channel, selectedCategory);                                
+				}
+			} else {
+				fetch('/get-drones')
+					.then(response => response.json())
+					.then(sections => {
+						if (sections.length === 0) {
+							console.error('No playback devices available.');
+							Swal.fire('No Playback Devices Available', 'Please add devices to the configuration.', 'warning');
+							return;
+						}
+
+						// Use section names directly as options, mapping names to values
+						let sectionOptions = {};
+						sections.forEach((section) => {
+							sectionOptions[section] = section;  // Map section name to itself
+						});
+
+						// Use SweetAlert to show a dropdown menu for selecting a category
+						Swal.fire({
+							title: `Start Channel ${channel}`,
+							input: 'select',
+							inputOptions: sectionOptions,
+							inputPlaceholder: ' ',
+							showCancelButton: true,
+							position: 'top-start',
+							customClass: {
+								popup: 'popup',           // Class for the modal's main container
+								title: 'popup-title',            // Class for the title
+								cancelButton: 'boxless red',    // Class for the cancel button
+								confirmButton: 'boxless cyan',  // Class for the confirm button
+								input: 'popup-dropdown',            // Class for the dropdown input
+							}
+						}).then((result) => {
+							if (result.isConfirmed) {
+								let selectedCategory = result.value;
+								console.log('Selected client:', selectedCategory);
+
+								if (channel == 'undefined') {
+									stopBeehive(selectedCategory);
+								} else if (channel == 'live') {
+									prevueUnHide();
+									
+									var all_live_data = {{ live_onload | tojson }};
+									console.log(all_live_data);
+									if (all_live_data.hasOwnProperty(selectedCategory)) {
+										var live_data = all_live_data[selectedCategory];
+										console.log(live_data);
+										prevueText(live_data['channel-title'], live_data['title-text'], live_data['details-text'], live_data['time-date-text'], 'CHANNEL '+live_data['channel-number'], live_data['prevue-image']);
+									} else {
+										prevueText('NOT PLAYING', selectedCategory, 'The selected Drone is not active.', '', '', '');
+									}
+								} else {
+									// Call the startBeehive function with the channel and selected category
+									startBeehive(channel, selectedCategory);                                
+								}
+
+							} else {
+								console.log('User cancelled the selection.');
+							}
+						});
+					})
+					.catch(error => {
+						console.error('Error fetching section names:', error);
+						Swal.fire('Error', 'Failed to load playback devices. Please try again.', 'error');
+					});
+			}
+		}
+
+
+		function startBeehive(channel, selectedCategory) {
+			//console.log('Socket:', socket); // Check if socket is defined
+			// Combine channel and selected category into a comma-separated arguments string
+			let args = `${channel},${selectedCategory}`;
+
+			// Emit the script and arguments to the server using Socket.IO
+			socket.emit('start_beehive', { script: 'beehive.py', arguments: args });
+
+			console.log(`Emitted 'start_beehive' with script: 'beehive.py' and arguments: ${args}`);
+			setTimeout(function() {
+				location.reload();
+			}, 2000); 			
+		}
+
+
+		function stopBeehive(clientName) {
+			// Assuming you stored the PID or have access to it
+			console.log(`Emitted 'stop_beehive' on ${clientName}`);
+			socket.emit('stop_beehive', clientName);
+			setTimeout(function() {
+				location.reload();
+			}, 2000); 
+		}
+
+        // Function to get the current time rounded down to the nearest half hour
+        function getCurrentTime() {
+            var currentTime = new Date();
+            var minutes = currentTime.getMinutes();
+            var roundedMinutes = Math.round(minutes / 30) * 30;
+            currentTime.setMinutes(roundedMinutes);
+            return currentTime;
+        }
+
+
+    </script>
+	{% if kiosk_mode is defined and kiosk_mode != False %}<div class="noverflow"><table>{% else %}
+    <div class="page" style="width:100%;min-width:907px;">
+        <h1 onclick="window.location.href=window.location.pathname;" style="font-family: Prevue-C;">Broadcast Emulation Engine</h1>
+    </div>
+	<div class="noverflow">
+		<table>
+		<tr>
+			<td class="box blue firstcolumn"><a href="{{ url_for('index') }}" class="yellow">ABOUT</a></td>
+			<td class="box blue">
+				<a href="{{ url_for('show_schedule') }}" class="yellow"><span>SCHEDULE</span></a>
+			</td>
+			<td class="box yellow blue">
+				<a href="{{ url_for('select_channel') }}" class="yellow"><span>CHANNELS</span></a>
+			</td>
+			<td class="box blue"><a class="yellow" href="{{ url_for('clients') }}">DRONES</a></td>
+			<td class="box blue"><a class="yellow" href="{{ url_for('fresh_honey') }}">FRESH HONEY</a></td>
+			
+			<td class="box yellow blue"><a href="{{ url_for('settings') }}"class="yellow">SETTINGS</a></td>
+			<td class="box yellow blue"></td>
+			<td class="box yellow blue"></td>
+			<td class="box yellow blue"></td>
+		</tr>
+	<div>
+	{% endif %}
+		<!-- Add this where you want to display flash messages -->
+		{% with messages = get_flashed_messages() %}
+		  {% if messages %}
+			<div class=flashes>
+			{% for message in messages %}
+			<td class="box yellow red fullspanx">{{ message }}</td>
+			<td class="box yellow red"></td>
+			<td class="box yellow red"></td>
+			<td class="box yellow red"></td>
+			</tr>
+			{% endfor %}
+			
+			</div>
+		  {% endif %}
+		{% endwith %}
+
+    </div>
+
+		</table>
+    <!-- Define the table structure -->
+    <table class='grid' id="schedule-table">
+	<tr class="tophalf hide" id="prevue-row">
+	<td class="boxtop" id="prevue-left" onclick="prevueHide()"><br>
+	{% if live_onload %}
+	{% for client, live in live_onload.items() %}
+	{% if loop.first %}
+	<span id="channel-title">{{ live_onload[client]['channel-title'] }}</span><br><br>
+	<span id="title-text" class="yellow">{{ live_onload[client]['title-text'] }}</span><br><br>
+	<span id="details-text" style="padding:25px" class="smallfont">{{ live_onload[client]['details-text'] }}</span><br><br>
+	<span id="time-date-text">{{ live_onload[client]['time-date-text'] }}</span><br><br>
+	<span id="channel-number">{{ live_onload[client]['channel-number'] }}
+	<span>
+	</td>
+	<td class="boxtop" id="prevue-right" onclick='prevueHide()'>
+
+		<img id="prevue-image" src="{{ live_onload[client]['prevue-image'] }}" alt="Preview Image" style="vertical-align: middle; max-height: auto; max-width: 440px; height: auto; width: auto; display: block; margin: auto;">
+
+	</td>
+	{% endif %}
+	{% endfor %}
+	{% else %}
+	<span id="channel-title">NOT PLAYING</span><br>
+	<span id="title-text" class="yellow">Right click on channel to start broadcasting to a selected Drone.</span><br><br>
+	<span id="details-text" style="padding:25px"></span><br><br>
+	<span id="time-date-text"></span><br><br>
+	<span id="channel-number"><span>	
+	</td>
+	<td class="boxtop" id="prevue-right" onclick='prevueHide()'>
+			<script>// Get the image path from Flask (embedded into the page using Jinja2)
+		var imagePath = "{{ live_onload[client] }}";
+		console.log(imagePath);
+		//document.getElementById("prevue-image").src = imagePath;</script>
+		<img id="prevue-image" src="/static/beeprev2.png" alt="Preview Image" style="max-height: 321px; max-width: 626px; height: auto; width: auto; display: block; margin: auto;">
+
+	</td>
+	{% endif %}
+	
+	</tr>
+	
+	{% if live_onload %}
+	{% for client, live in live_onload.items() %}
+	{% if kiosk_mode is not defined or kiosk_mode == False %}
+	{% set now_playing = 'all' %}
+	{% else %}
+	{% set now_playing  = kiosk_mode %}
+	{% endif %}
+	{% if now_playing == client or now_playing == 'all' %}
+	<tr class="top-row">
+	<td class="box yellow firstcolumn" id="channel-number-cell" onclick="prevueUnHide()" oncontextmenu="stopBeehive('{{ live_onload[client]['channel-title'] }}');return false;">{{ live_onload[client]['channel-number'] }}</td>
+	<td id="title-text-cell" class="box yellow trispan" onclick="prevueUnHide()"  oncontextmenu="stopBeehive('{{ live_onload[client]['channel-title'] }}');return false;">{{ live_onload[client]['title-text'] }}</td>
+	<td id="channel-title-cell" class="box yellow doublespan" title="Click to stop" onclick="prevueUnHide()" oncontextmenu="stopBeehive('{{ live_onload[client]['channel-title'] }}');return false;">Playing on {{ live_onload[client]['channel-title'] }}</td>
+	<td id="channel-title-cell" class="box yellow"></td><td id="channel-title-cell" class="box yellow"></td><td id="channel-title-cell" class="box yellow"></td>
+	</tr>
+	{% endif %}
+	{% endfor %}
+	{% else %}
+	<tr class="top-row" onclick="prevueUnHide()">
+	<td class="box yellow firstcolumn" id="channel-number-cell"></td>
+	<td id="title-text-cell" class="box yellow trispan">NOT PLAYING</td>
+	<td id="time-date-text-cell" class="box yellow doublespan">Right click channel to start</td>
+	<td id="channel-title-cell" class="box yellow"></td><td id="channel-title-cell" class="box yellow"></td><td id="channel-title-cell" class="box yellow"></td>
+	{% endif %}
+	
+            {% block content %}{% endblock %}
+</div>
+</body>
+</html>

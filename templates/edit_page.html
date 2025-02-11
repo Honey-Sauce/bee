@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Channel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Edit Channel</h1>
+    <form method="post">
+        <label for="channel_name">Channel Name:</label>
+        <input type="text" id="channel_name" name="channel_name" required>
+
+        <h2>Channel Defaults</h2>
+        <div class="block-entry">
+            <label for="block_name">Block Name:</label>
+            <input type="text" id="block_name" name="block_name[]" required>
+
+            <label for="start_time">Start Time:</label>
+            <input type="time" id="start_time" name="start_time[]" required>
+
+            <label for="end_time">End Time:</label>
+            <input type="time" id="end_time" name="end_time[]" required>
+
+            <label for="allowed_genres">Allowed Genres:</label>
+            <input type="text" id="allowed_genres" name="allowed_genres[]" required>
+
+            <label for="allowed_ratings_movie">Allowed Movie Ratings:</label>
+            <input type="text" id="allowed_ratings_movie" name="allowed_ratings_movie[]" required>
+
+            <label for="allowed_ratings_tv">Allowed TV Ratings:</label>
+            <input type="text" id="allowed_ratings_tv" name="allowed_ratings_tv[]" required>
+
+            <label for="allowed_languages">Allowed Languages:</label>
+            <input type="text" id="allowed_languages" name="allowed_languages[]" required>
+        </div>
+
+        <button type="button" id="add_block">Add Block</button>
+        <button type="submit">Create Channel</button>
+    </form>
+
+    <script>
+        // JavaScript to add more block entries dynamically
+        document.getElementById('add_block').addEventListener('click', function() {
+            const blockEntry = document.querySelector('.block-entry').cloneNode(true);
+            document.querySelector('form').appendChild(blockEntry);
+        });
+    </script>
+</body>
+</html>

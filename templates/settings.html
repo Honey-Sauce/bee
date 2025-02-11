@@ -1,0 +1,64 @@
+{% extends 'layout.html' %}
+{% block content %}
+    <!-- Define the table structure -->
+    <table class='grid' id="settings-table">
+		<tr id="settings-explanation">
+		
+		<td class="box tall cyan firstcolumn" id="current-time">HH:MM:SS</td>
+		<td class="box tall cyan" id="settings">General Settings</td>
+		<td class="box tall cyan fourspan" id="settings-details">Below are settings open to user modification. Click each category to expand each setting. Use the save button at the bottom to write the changes to the config file.</td>
+	</tr>
+		{{html_string|safe}}
+
+    </table>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>	
+    <script>
+		var socket = io();
+        // Function to get the current time rounded down to the nearest half hour
+        function getCurrentTime() {
+            var currentTime = new Date();
+            var minutes = currentTime.getMinutes();
+            var roundedMinutes = Math.round(minutes / 30) * 30;
+            currentTime.setMinutes(roundedMinutes);
+            return currentTime;
+        }
+
+        // Function to format time as HH:MM
+        function formatTime(date) {
+            var hours = date.getHours();
+            var minutes = date.getMinutes();
+            if (minutes < 10) {
+                minutes = '0' + minutes;
+            }
+            return hours + ':' + minutes;
+        }
+
+		function toggleClass(elementId, className) {
+			const element = document.getElementById(elementId);
+			if (element) {
+				element.classList.toggle(className);
+			}
+		}
+		function toggleDualClass(elementId, className, elementId2, className2, inputId, newValue) {
+			const element = document.getElementById(elementId);
+			if (element) {
+				element.classList.toggle(className);
+			}
+			const element2 = document.getElementById(elementId2);
+			if (element2) {
+				element2.classList.toggle(className2);
+			}
+			const inputElement = document.getElementById(inputId);
+			if (inputElement) {
+				inputElement.value = newValue;
+			}
+		}
+        // Call updateScheduleTime function when the page loads
+        window.onload = function() {
+            updateScheduleTime();
+            setInterval(updateScheduleTime, 30000); // Update every 30 seconds
+        };
+    </script>
+	
+{% endblock %}

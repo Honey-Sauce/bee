@@ -1,0 +1,16 @@
+{% extends 'layout.html' %}
+
+{% block title %}New JSON - Channel Manager{% endblock %}
+
+{% block content %}
+<h2>Create New JSON Content</h2>
+<form method="post" action="{{ url_for('new_json') }}">
+    <label for="json-filename">JSON File Name:</label>
+    <input type="text" id="json-filename" name="json_filename" required>
+    <br>
+    <label for="json-content">JSON content:</label>
+    <textarea id="json-content" name="json_content" rows="20" cols="100"></textarea>
+    <br>
+    <button type="submit">Create JSON</button>
+</form>
+{% endblock %}

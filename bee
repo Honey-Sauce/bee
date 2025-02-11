@@ -1,0 +1,23 @@
+# Use an official lightweight Python image
+FROM python:3.11-slim
+
+# Install ffmpeg
+RUN apt-get update && apt-get install -y ffmpeg
+
+# Set the working directory inside the container
+WORKDIR /bee
+
+# Copy only requirements first (for efficient caching)
+COPY requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of your application files
+COPY . .
+
+# Make port 5000 available to the world outside this container
+EXPOSE 5000
+
+# Run both scripts in parallel
+CMD ["sh", "-c", "python web_app.py & python hivemind.py & wait"]

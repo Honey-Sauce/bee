@@ -1,0 +1,187 @@
+{% extends 'layout.html' %}
+{% block content %}
+    <!-- Define the table structure -->
+    <table class='grid' id="settings-table">
+		<tr id="settings-explanation">
+		<td class="box tall cyan firstcolumn" id="current-time">HH:MM:SS</td>
+		<td class="box tall cyan" id="settings">Fresh Honey</td>
+		<td class="box tall cyan fourspan" id="settings-details">Use this page to add and modify Fresh content sources. Use TMDB endpoints or the URL of a supported source. Fresh content can be included in any of the supported BEE libraries.</td>
+	</tr>
+	
+		<tr id="warning-explanation">
+		<td class="box red tall firstcolumn" id="past-time"></td>
+		<td class="box red tall" id="warning" >WARNING</td>
+		<td class="box red tall fourspan" id="warning-details">Using the Max Age Retention field will DELETE files older than the SET VALUE in DAYS from the SET DIRECTORY.</td>
+	</tr>
+	
+		{{html_string|safe}}
+	<form action="{{ url_for('fresh_honey') }}" method="post"><tr><td class="box fullspanx"><input class="boxless fullspanx" type="text" data-id="client-name" id="client-name" name="client-name" value=""></td></tr>
+	<tbody id="addnew" name="addnew">
+	<td class="box yellow firstcolumn extrasmallfont" style="text-align: end;">CONTENT TYPE</td>
+	<td id="TMDB-new" class="box" onclick="toggleToggle('addnew', 'TMDB-new','blue','URL-new','blue','Content-Type','tmdb','url')">TMDB</td><td id="URL-new" class="box blue" onclick="toggleToggle('addnew'
+	,'TMDB-new','blue','URL-new','blue','Content-Type','url','tmdb')">URL</td><input type="hidden" data-id="Content-Type" id="Content-Type" name="Content-Type" value="tmdb">
+	<td class="box blue trispan " style="text-align: start;">Select TMDB or URL source</td>
+	</tr>
+	<td class="box tall yellow firstcolumn extrasmallfont " style="text-align: end;">GENERATE NFO</td><td id="Generate-NFO-True" class="box tall" onclick="toggleDualClass('Generate-NFO-True','blue','Generate-NFO-False','blue','Generate-NFO','True')">True</td><td id="Generate-NFO-False" class="box tall blue" onclick="toggleDualClass('Generate-NFO-True','blue','Generate-NFO-False','blue','Generate-NFO','False')">False</td><td class="box tall blue trispan" style="text-align: start;">Create NFO file with metadata (select False if downloading to a Movies or Shows library</td><input type="hidden" id="Generate-NFO" name="Generate-NFO" value="True"></tr><td class="box tall yellow firstcolumn extrasmallfont " style="text-align: end;">IS MUSIC VIDEO</td><td id="Is-Music-Video-True" class="box tall blue" onclick="toggleDualClass('Is-Music-Video-True','blue','Is-Music-Video-False','blue','Is-Music-Video','True')">True</td><td id="Is-Music-Video-False" class="box tall" onclick="toggleDualClass('Is-Music-Video-True','blue','Is-Music-Video-False','blue','Is-Music-Video','False')">False</td><td class="box tall blue trispan" style="text-align: start;">If downloading to a Music Video library, select True to include artist/song metadata</td><input type="hidden" id="Is-Music-Video" name="Is-Music-Video" value="False"></tr>
+	
+	<td class="box yellow firstcolumn smallfont " style="text-align: end;">DIRECTORY</td>
+	<td class="box blue doublespan" style="text-align: start;"><input class="boxless blue doublespan" type="text" id="Directory" name="Directory" value=""></input></td>
+	<td class="box blue trispan " style="text-align: start;">File path to download directory</td>
+	</tr>
+
+	<tr class="url hide"><td class="box yellow firstcolumn extrasmallfont" style="text-align: end;">CONTENT SOURCE</td>
+	<td class="box blue doublespan" style="text-align: start;"><input class="boxless blue doublespan" type="text" id="Content-Source" name="Content-Source" value=""></input></td>
+	<td class="box blue trispan " style="text-align: start;">Playlist/video page URL</td>
+	</tr>
+	<tr class="tmdb"><td class="box yellow firstcolumn extrasmallfont " style="text-align: end;">TMDB ENDPOINT</td>
+	<td class="box blue" style="text-align: start;"><input class="boxless blue" type="text" id="TMDB-Endpoint" name="TMDB-Endpoint" value=""></input></td>
+	<td class="box blue fourspan" style="text-align: start;">If TMDB, enter: now_playing, popular, top_rated or upcoming</td>
+	</tr>
+	<tr class="tmdb"><td class="box yellow firstcolumn extrasmallfont" style="text-align: end;">FRESH MOVIES</td>
+	<td class="box blue dualspan" style="text-align: start;"><input class="boxless blue dualspan" type="number" id="Fresh-Movies" name="Fresh-Movies" value=""></input></td>
+	<td class="box blue fourspan" style="text-align: start;">Number of fresh movies to get from TMDB</td>
+	</tr>
+	<tr class="tmdb"><td class="box yellow firstcolumn smallfont" style="text-align: end;">LANGUAGE</td>
+	<td class="box blue dualspan" style="text-align: start;"><input class="boxless blue dualspan" type="text" id="Language" name="Language" value=""></input></td>
+	<td class="box blue fourspan" style="text-align: start;">ISO 639 Language Tag</td>
+	</tr>
+	<tr class="tmdb"><td class="box yellow firstcolumn smallfont" style="text-align: end;">REGION</td>
+	<td class="box blue  dualspan" style="text-align: start;"><input class="boxless blue dualspan" type="text" id="Region" name="Region" value=""></input></td>
+	<td class="box blue fourspan" style="text-align: start;">ISO 3166 Region Tag</td>
+	</tr>
+	<td class="box yellow firstcolumn smallfont" style="text-align: end;">MAX LENGTH</td>
+	<td class="box blue" style="text-align: start;"><input class="boxless blue" type="number" id="Max-Length" name="Max-Length" value=""></input></td>
+	<td class="box blue fourspan" style="text-align: start;">Maximum video length in minutes</td>
+	</tr>
+	<td class="box yellow firstcolumn extrasmallfont" style="text-align: end;">MAX AGE DOWNLOAD</td>
+	<td class="box blue" style="text-align: start;"><input class="boxless blue" type="number" id="Max-Age-Download" name="Max-Age-Download" value=""></input></td>
+	<td class="box blue fourspan" style="text-align: start;">Maximum age of video to download in days</td>
+	</tr>
+	<td class="box yellow extratall dualspan firstcolumn smallfont " style="text-align: end;">MAX AGE RETENTION</td>
+	<td class="box blue extratall dualspan" style="text-align: start;"><input class="boxless blue dualspan" type="number" id="Max-Age-Retention" name="Max-Age-Retention" value=""></input></td>
+	<td class="box blue fourspan extratall" style="text-align: start;">Maximum number of days to retain files in the above directory. Set blank or 0 to disable. </br>WARNING: This feature will DELETE files older than the set age from the DIRECTORY set above.</td>
+	
+
+	</tr>
+	<tr><td class="box cyan fullspanx"><button class="boxless cyan fullspanx" type="submit" name="action" value="new">ADD NEW</button></td></tr></tbody>
+	</form>
+
+    </table>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>	
+    <script>
+		var socket = io();
+        // Function to get the current time rounded down to the nearest half hour
+        function getCurrentTime() {
+            var currentTime = new Date();
+            var minutes = currentTime.getMinutes();
+            var roundedMinutes = Math.round(minutes / 30) * 30;
+            currentTime.setMinutes(roundedMinutes);
+            return currentTime;
+        }
+
+        // Function to format time as HH:MM
+        function formatTime(date) {
+            var hours = date.getHours();
+            var minutes = date.getMinutes();
+            if (minutes < 10) {
+                minutes = '0' + minutes;
+            }
+            return hours + ':' + minutes;
+        }
+
+		function toggleClass(elementId, className) {
+			const element = document.getElementById(elementId);
+			if (element) {
+				element.classList.toggle(className);
+			}
+		}
+		function toggleDualClass(elementId, className, elementId2, className2, inputId, newValue) {
+			const element = document.getElementById(elementId);
+			if (element) {
+				element.classList.toggle(className);
+			}
+			const element2 = document.getElementById(elementId2);
+			if (element2) {
+				element2.classList.toggle(className2);
+			}
+			const inputElement = document.getElementById(inputId);
+			if (inputElement) {
+				inputElement.value = newValue;
+			}
+		}
+		
+		function contentTypeToggle(parentID, class1, class2) {
+			// Get the parent element by ID
+			const parentElement = document.getElementById(parentID);
+
+			if (parentElement) {
+				// Find all children with the given class name
+				const elements1 = parentElement.querySelectorAll(`.${class1}`);
+
+				// Toggle the 'hide' class on each matching child
+				elements1.forEach(element => {
+					element.classList.toggle('hide');
+				
+				});
+				// Find all children with the given class name
+				const elements2 = parentElement.querySelectorAll(`.${class2}`);
+
+				// Toggle the 'hide' class on each matching child
+				elements2.forEach(element => {
+					element.classList.toggle('hide');
+				});
+				console.log('SUCCESS');
+			} else {
+				console.error(`Parent with ID "${parentId}" not found.`);
+			}	
+		}
+		
+		function toggleToggle(parentID, elementId, className, elementId2, className2, inputId, newValue, notValue) {
+			const element = document.getElementById(elementId);
+			if (element) {
+				element.classList.toggle(className);
+			}
+			const element2 = document.getElementById(elementId2);
+			if (element2) {
+				element2.classList.toggle(className2);
+			}
+			const inputElement = document.getElementById(inputId);
+			if (inputElement) {
+				inputElement.value = newValue;
+			}
+			// Get the parent element by ID
+			const parentElement = document.getElementById(parentID);
+			console.log(parentElement);
+			if (parentElement) {
+				// Find all children with the given class name
+				const elements1 = parentElement.querySelectorAll(`.${newValue}`);
+				const elementsAll = document.querySelectorAll(`.${newValue}`);
+				const elements = Array.from(elementsAll).filter(child => parentElement.contains(child));
+				// Toggle the 'hide' class on each matching child
+				elements1.forEach(element => {
+					element.classList.toggle('hide');
+				
+				});
+				// Find all children with the given class name
+				const elements2 = parentElement.querySelectorAll(`.${notValue}`);
+
+				// Toggle the 'hide' class on each matching child
+				elements2.forEach(element => {
+					element.classList.toggle('hide');
+				});
+				console.log(elementsAll);
+				console.log(elements);
+			} else {
+				console.error(`Parent with ID "${parentId}" not found.`);
+			}	
+		}
+		
+        // Call updateScheduleTime function when the page loads
+        window.onload = function() {
+            updateScheduleTime();
+            setInterval(updateScheduleTime, 30000); // Update every 30 seconds
+        };
+    </script>
+	
+{% endblock %}

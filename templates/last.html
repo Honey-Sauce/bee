@@ -1,0 +1,30 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+	<form action="/last/{{ channel }}" method="post">
+    <tr>
+	<td class="box fullspanx yellow">Edit Last Episode</td>
+	
+	</tr>
+    <tbody>
+	{% for show,data in file_data.items() %}
+	<tr>
+	<td class="box blue firstthree yellow" title="{{ data['title'] }}">{{ data['title'] }}</td>
+
+	{% set episode_data = shows_data[show]['files'][data['episode_path']]['episode_details'][0] %}
+	{% set episodes = shows_data[show]['files'] %}
+	<td class="box blue trispan">
+	<select id="{{ show }}" name="{{ show }}" class="boxless blue trispan">
+    {% for episode,ep_data in episodes.items() %}
+	{% set ep_details = ep_data['episode_details'][0] %}
+	<option value="{{ ep_data['episode_path'] }}"{% if episode == data['episode_path'] %} selected{% endif %}>S{{ ep_details['season'] }}E{{ ep_details['episode'] }} {{ ep_details['title'] }} (Aired: {{ ep_details['aired'] }})</option>
+	{% endfor %}
+	{% endfor %}
+	</select>
+	</tr>
+	<td class= "box totalspan">
+	<button type="submit" class="boxless totalspan">SAVE CHANGES</button>
+	</td>
+	</tbody>
+	</form>
+{% endblock %}

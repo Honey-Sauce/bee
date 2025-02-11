@@ -1,0 +1,11 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+        <tr><td class="box yellow fullspanx">DELETE CHANNEL TEMPLATE</td>
+		<tr><td class="box red yellow fullspanx">Are you sure you want to delete the template "{{ template_file }}"?</span>
+        <tr><form action="{{ url_for('delete_template') }}" method="post">
+            <input type="hidden" name="template_file" value="{{ template_file }}">
+			<td class="box red"><input class="boxless red yellow" type="submit" value="DELETE"></input>
+        </form>
+		<td class="box yellow"><a href="{{ url_for('index') }}">CANCEL</a></td></tr>
+{% endblock %}

@@ -1,0 +1,867 @@
+{% extends 'layout.html' %}
+
+{% block title %}Edit Entry - Channel Manager{% endblock %}
+
+{% block content %}
+<form action="{{ url_for('edit_entry', channel=channel, day=day, dow=dow, time=entry.start_time, entry_id=entry.id) }}" method="post">
+    <table id="title_content" class="grid">
+        <tr class>
+            <td class="box yellow firstcolumn" id="current-time" style="text-align:right;"></td>
+            <td class="box yellow fullspan">Edit Schedule Entry</td>
+        </tr>
+	</table>
+    <table id="main_content" class="grid hide">
+        <tr>
+            <td class="box yellow blue firstcolumn" style="text-align:right;">Channel:</td>
+            <td class="box fullspan blue">{{ channel }}</td>
+        </tr>
+        <tr>
+            <td class="box yellow blue firstcolumn" style="text-align:right;">Days:</td>
+			<td class="box {% if 'Monday' in dow %}selected{% else %}blue{% endif %}" id="Monday" name="Monday" onclick="toggleDOW('Monday', 'Monday')">Monday</td>
+
+			<td class="box {% if  'Tuesday' in dow %}selected{% else %}blue{% endif %}" id="Tuesday" name="Tuesday" onclick="toggleDOW('Tuesday', 'Tuesday')">Tuesday</td>
+			<td class="box {% if  'Wednesday' in dow %}selected{% else %}blue{% endif %}" id="Wednesday" name="Wednesday" onclick="toggleDOW('Wednesday', 'Wednesday')">Wednesday</td>
+			<td class="box {% if 'Thursday' in dow %}selected{% else %}blue{% endif %}" id="Thursday" name="Thursday" onclick="toggleDOW('Thursday', 'Thursday')">Thursday</td>
+			<td class="box {% if 'Friday' in dow %}selected{% else %}blue{% endif %}" id="Friday" name="Friday" onclick="toggleDOW('Friday', 'Friday')">Friday</td>
+        </tr>
+		<tr>
+            <td class="box yellow blue firstcolumn" style="text-align:right;">Days:</td>
+			<td class="box {% if 'Saturday' in dow %}selected{% else %}blue{% endif %}" id="Saturday" name="Saturday" onclick="toggleDOW('Saturday', 'Saturday')">Saturday</td>
+			<td class="box {% if 'Sunday' in dow %}selected{% else %}blue{% endif %}" id="Sunday" name="Sunday" onclick="toggleDOW('Sunday', 'Sunday')">Sunday</td>
+			<input type="hidden" id="dow_input" name="dow_input" value="{{ dow }}">
+			<td class="box blue trispan"></td>
+		</tr>
+        <tr>
+            <td class="box yellow blue firstcolumn" style="text-align:right;">Time:</td>
+			<td class="box blue fullspan">
+				<input type="time" id="start_time" name="start_time" class="boxless blue" value="{{ entry.start_time }}" required>
+			</td>
+		</tr>
+		<tr>
+			{% set entry_type_key = entry.type.keys() | list | first %}
+			<td class="box yellow blue firstcolumn" style="text-align:right;">Type:</td>
+			
+			<td class="box {% if entry.type and 'series' in entry.type or 'random_series' in entry.type %}selected{% else %}blue{% endif %}" onclick="toggleType(this, 'type', 'series')">Series</td>
+			<td class="box {% if entry.type and 'random_movie' in entry.type %}selected{% else %}blue{% endif %}" onclick="toggleType(this, 'type', 'movie')">Movie</td>
+			<td class="box {% if entry.type and 'music_videos' in entry.type %}selected{% else %}blue{% endif %}" onclick="toggleType(this, 'type', 'music_videos')">Music Video</td>
+			<td class="box blue doublespan"><input type="hidden" id="type" name="type" value="{{ entry_type_key }}"></td>
+		</tr>
+		
+        {% if 'series' == entry_type_key %}
+		{% set series_display = "" %}
+		{% set movie_display = "hide" %}
+		{% set duration_minutes = entry.type.series.duration_minutes %}
+		{% set entry_id = entry.type.series.id %}
+		{% endif %}
+        {% if 'movie' == entry_type_key %}
+		{% set series_display = "hide" %}
+		{% set movie_display = "" %}
+		{% endif %}
+		
+        {% if 'music_videos' == entry_type_key %}
+		{% set series_display = "hide" %}
+		{% endif %}
+		
+		{% set filter_categories = {
+			'ratings':{
+				'series': filter_data.series_ratings or [],
+				'movies': filter_data.movies_ratings or [],
+				},
+			'years':{
+				'series': filter_data.series_years or [],
+				'movies': filter_data.movies_years or [],
+				},
+			'decades':{
+				'series': filter_data.series_decades or [],
+				'movies': filter_data.movies_decades or [],
+				'music_videos': filter_data.music_videos_decades or [],
+				},
+			'actor':{
+				'series': filter_data.series_actor_names or [],
+				'movies': filter_data.movies_actor_names or [],
+				},
+			'director':{
+				'series': filter_data.series_director_names or [],
+				'movies': filter_data.movies_director_names or [],
+				}, 
+			'writer':{
+				'series': filter_data.series_writer_names or [],
+				'movies': filter_data.movies_writer_names or [],
+				}, 
+			'producer':{
+				'series': [],
+				'movies': filter_data.movies_producer_names or [],
+				}, 
+			'genre':{
+				'series': filter_data.series_genre_names or [],
+				'movies': filter_data.movies_genre_names or [],
+				}, 
+			'studio':{
+				'series': filter_data.series_studio_names or [],
+				'movies': filter_data.movies_studio_names or [],
+				},
+			'tag':{
+				'series': [],
+				'movies': filter_data.movies_tags_names or [],
+				'music_videos': filter_data.music_videos_tags or [],
+				}} %}
+		<tr id="series_fields" class="{% if 'series' not in entry.type and 'random_series' not in entry.type %}hide{% endif %}">
+            <td class="box yellow firstcolumn" style="text-align:right;">Series:</td>
+            <td class="box doublespan">
+                <select id="title" name="title" class="boxless doublespan" onchange="updateDetails(this)">
+                    <option value="random">Random</option>
+                    {% for show_key, show in shows_details.items() %}
+                    <option value="{{ show_key }}" {% if entry.title == show.title %}selected{% endif %}>
+                        {{ show.title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </td>
+			<td class="box blue" id="filter-shows">Filter Shows</td>
+			<input type="hidden" id="series_id" name="series_id" class="boxless" value="{{ entry_id }}"></input>
+			<td class="box" id="series_duration"><span id="series_duration_minutes" name="duration_minutes" value="{{ duration_minutes }}">{{ duration_minutes }}</span> Minutes</td>
+			<input type="hidden" id="show_duration_minutes" name="show_duration_minutes" class="boxless" value="{{ duration_minutes }}"></input>
+			<div><td class="box" id="series_rating" name="rating">{% if entry.type and 'series' in entry.type and entry_id in shows_details and shows_details[entry_id].certification %}{{ shows_details[entry_id].certification.split(':')[1] }}{% endif %}</td></div>
+			<td class="box doublespan {% if 'random_series' not in entry.type %}hide{% endif %}" id="series_duration_span" style="text-align:left;">
+					<input type="number" id="series_duration_min" name="series_duration_min" class="boxless " min="0" max="999"style="width:55px;text-align:right;" value="{% if entry.type and 'random_series' in entry.type and 'duration_minutes' in entry.type.random_series %}{{ entry.type.random_series.duration_minutes[0] }}{% else %}0{% endif %}"></input>-<input type="number" id="series_duration_max" name="series_duration_max" class="boxless " min="1" max="999" style="width:55px;text-align:right;" value="{% if entry.type and 'random_series' in entry.type and 'duration_minutes' in entry.type.random_series %}{{ entry.type.random_series.duration_minutes[1] }}{% else %}999{% endif %}"></input> Minutes
+			</td>
+        </tr>
+		<tr id="movie_fields" class="{% if 'movie' not in entry.type and 'random_movie' not in entry.type %}hide{% endif %}">
+            <td class="box yellow firstcolumn" style="text-align:right;">Movie:</td>
+            <td class="box selected" id="movie_title" name="movie_title" value="random">Random
+            </td>
+			<td class="box {% if entry.type and 'random_movie' in entry.type and 'kevin_bacon_mode' in entry.type.random_movie and entry.type.random_movie.kevin_bacon_mode != 'false' %}selected{% endif %}" id="link-mode-cell" onclick="toggleLinkMode()">Link Mode</td>
+			<input type="hidden" id="link_mode" name="link_mode" value="{% if entry.type and 'random_movie' in entry.type and 'kevin_bacon_mode' in entry.type.random_movie %}{% if  entry.type.random_movie.kevin_bacon_mode != 'false' %}disabled{% else %}enabled{% endif %}{% else %}disabled{% endif %}">
+			<td id="link_select_cell" class="box">
+				<select id="link_mode_select" name="link_mode_select" class="boxless {% if entry.type and 'random_movie' in entry.type and 'kevin_bacon_mode' in entry.type.random_movie and entry.type.random_movie.kevin_bacon_mode != 'false' %}selected{% else %}hide{% endif %}">
+					<option value="false"></option>
+					{% for link_filter in filter_categories.keys() %}
+					{% if 'decades' not in link_filter %}
+					<option value="{{ link_filter }}" {% if entry.type and 'random_movie' in entry.type and 'kevin_bacon_mode' in entry.type.random_movie and entry.type.random_movie.kevin_bacon_mode == link_filter %}selected{% endif %}>
+						{{ link_filter | capitalize }}
+					</option>
+					{% endif %}
+					{% endfor %}
+				</select>
+
+			</td>
+			<td class="box doublespan" id="movie_duration_span" style="text-align:left;">
+					<input type="number" id="movie_duration_min" name="movie_duration_min" class="boxless" min="0" max="999" style="width:55px;text-align:right;" value="{% if entry.type and 'random_movie' in entry.type and 'duration_minutes' in entry.type.random_movie %}{{ entry.type.random_movie.duration_minutes[0] }}{% else %}0{% endif %}"></input>-<input type="number" id="movie_duration_max" name="movie_duration_max" class="boxless" min="1" max="999" style="width:55px;text-align:right;" value="{% if entry.type and 'random_movie' in entry.type and 'duration_minutes' in entry.type.random_movie %}{{ entry.type.random_movie.duration_minutes[1] }}{% else %}999{% endif %}"> Minutes
+
+			</td>
+		</tr>
+		<tr id="music_videos_fields" class="{% if 'music_videos' not in entry.type %}hide{% endif %}">
+            <td class="box yellow firstcolumn" style="text-align:right;"></td>
+            <td class="box selected" id="music_videos_title" name="music_videos_title" value="random">Music Videos
+            </td>
+			<td class="box {% if entry.type and 'music_videos' in entry.type and 'kevin_bacon_mode' in entry.type.music_videos and entry.type.music_videos.kevin_bacon_mode != 'false' %}selected{% endif %}" id="mv-link-mode-cell" onclick="toggleMVLinkMode()">Link Mode</td>
+			<input type="hidden" id="mv-link_mode" name="mv-link_mode" value="{% if entry.type and 'music_videos' in entry.type and 'kevin_bacon_mode' in entry.type.music_videos %}{% if  entry.type.music_videos.kevin_bacon_mode != 'false' %}disabled{% else %}enabled{% endif %}{% else %}disabled{% endif %}">
+			<td id="mv-link_select_cell" class="box">
+				<select id="mv-link_mode_select" name="mv-link_mode_select" class="boxless {% if entry.type and 'music_videos' in entry.type and 'kevin_bacon_mode' in entry.type.music_videos and entry.type.music_videos.kevin_bacon_mode != 'false' %}selected{% else %}hide{% endif %}">
+					<option value="false"></option>
+					{% for link_filter in ['years','tag'] %}
+					{% if 'decades' not in link_filter %}
+					<option value="{{ link_filter }}" {% if entry.type and 'music_videos' in entry.type and 'kevin_bacon_mode' in entry.type.music_videos and entry.type.music_videos.kevin_bacon_mode == link_filter %}selected{% endif %}>
+						{{ link_filter | capitalize }}
+					</option>
+					{% endif %}
+					{% endfor %}
+				</select>
+
+			</td>
+			<td class="box doublespan" id="music_videos_duration_span" style="text-align:left;">
+					<input type="hidden" id="music_videos_duration_min" name="music_videos_duration_min" class="boxless" style="width:55px;text-align:right;" value="0"></input>
+					<input type="number" id="music_videos_duration_max" name="music_videos_duration_max" class="boxless" min="1" max="999" style="width:55px;text-align:right;" value="{% if entry.type and 'music_videos' in entry.type and 'duration_minutes' in entry.type.music_videos %}{{ entry.type.music_videos.duration_minutes }}{% else %}10{% endif %}"> Minutes
+
+			</td>
+		</tr>
+
+		<tbody id="random_data" class="{% if 'random_series' not in entry.type and 'random_movie' not in entry.type and 'music_videos' not in entry.type %}hide{% endif %}">
+
+		{% for filter_category, filter_info in filter_data.items() %}
+		
+		{% if 'years' not in filter_category %}
+		
+		<tr id="{{ filter_category }}_row">
+			<td class="box blue firstcolumn yellow" style="text-align:right;">
+				{{ filter_category|capitalize }}:
+			</td>
+			<td class="box blue">
+				<select id="series_{{ filter_category }}_select" name="series_{{ filter_category }}_select[]" class="boxless blue {% if 'series' in entry.type %}{% elif 'random_movie' in entry.type %}hide{% endif %}">
+					<option value="" disabled selected></option>
+					{% for series_data in filter_info.series %}
+					<option value="{{ series_data }}">
+						{{ series_data[0] }} ({{ series_data[1] }})
+					</option>
+					{% endfor %}
+				</select>
+
+				<select id="movies_{{ filter_category }}_select" name="movies_{{ filter_category }}_select" class="boxless blue {% if 'random_movie' not in entry.type %}hide{% endif %}">
+					<option value="" disabled selected></option>
+					{% for movies_data in filter_info.movies %}
+					<option value="{{ movies_data }}">
+						{{ movies_data[0] }} ({{ movies_data[1] }})
+					</option>
+					{% endfor %}
+				</select>
+				
+				<select id="music_videos_{{ filter_category }}_select" name="music_videos_{{ filter_category }}_select" class="boxless blue {% if 'music_videos' in entry.type %}{% else %}hide{% endif %}">
+					<option value="" disabled selected></option>
+					{% for music_videos_data in filter_info.music_videos %}
+					<option value="{{ music_videos_data }}">
+						{{ music_videos_data[0] }} ({{ music_videos_data[1] }})
+					</option>
+					{% endfor %}
+				</select>
+			</td>
+			<td class="box blue buttons" id="{{ filter_category }}_allow_button" 
+				onmouseover="addHoverEffect(this)" onmouseout="removeHoverEffect(this)"
+				onclick="updateSection('{{ filter_category }}', 'allow')">Allow</td>
+			<td class="box">
+				<input class="boxless blue" type="text" id="allow_{{ filter_category }}_cell" name="allow_{{ filter_category }}_cell" 
+					   style="display:flex;align-items;flex-start;" 
+					   value="{% if 'random_movie' in entry.type %}{{ entry.type.random_movie[filter_category].allowed | join(', ') }}{% endif %}{% if 'random_series' in entry.type and filter_category not in ['producer', 'tag'] %}{{ entry.type.random_series[filter_category].allowed | join(', ') }}{% endif %}" onclick="updateSection('{{ filter_category }}', 'clear')"
+					   readonly>
+				</input>
+			</td>
+
+			<td class="box blue buttons" id="{{ filter_category }}_forbid_button" 
+				onmouseover="addHoverEffect(this)" onmouseout="removeHoverEffect(this)"
+				onclick="updateSection('{{ filter_category }}', 'forbid')">Forbid</td>
+			<td class="box"><input class="boxless blue" type="text" id="forbid_{{ filter_category }}_cell" name="forbid_{{ filter_category }}_cell" style="display:flex;align-items;flex-start;" value="{% if 'random_movie' in entry.type %}{{ entry.type.random_movie[filter_category].forbidden | join(', ') }}{% endif %}{% if 'random_series' in entry.type and filter_category not in ['producer','tag'] %}{{ entry.type.random_series[filter_category].forbidden | join(', ') }}{% endif %}" onclick="updateSection('{{ filter_category }}', 'clear')" readonly></input></td>
+
+		</tr>
+		{% endif %}
+		{% endfor %}
+		</tbody>
+		<div>
+		<tr id="series_episode_mode_field" class="{% if 'random_movie' in entry.type or 'music_videos' in entry.type %}hide{% endif %}">
+			<td class="box yellow blue firstcolumn" style="text-align:right;">Ep. Mode:</td>
+			<input type="hidden" id="episode_mode" name="episode_mode" class="boxless blue" value="{% if entry.type and 'series' in entry.type %}{{ entry.type.series.episode_mode }}{% endif %}" required>
+			<td class="box {% if entry.type and 'series' in entry.type %}{% if entry.type.series.episode_mode == 'sequential' %}selected{% else %}blue{% endif %}{% endif %}" onclick="toggleEpisodeMode(this, 'episode_mode', 'sequential')">Sequential</td>
+			<td class="box {% if entry.type and 'series' in entry.type %}{% if entry.type.series.episode_mode == 'random' %}selected{% else %}blue{% endif %}{% endif %}" onclick="toggleEpisodeMode(this, 'episode_mode', 'random')">Random</td>
+			<td class="box {% if entry.type and 'series' in entry.type %}{% if entry.type.series.episode_mode == 'rerun' %}selected{% else %}blue{% endif %}{% endif %}" onclick="toggleEpisodeMode(this, 'episode_mode', 'rerun')">Rerun</td>
+			<td class="box blue"></td>
+			<td class="box blue"></td>
+		</tr>
+		<tr id="series_on_end_field" class="{% if 'random_movie' in entry.type or 'music_videos' in entry.type %}hide{% endif %}">
+			<td class="box yellow blue firstcolumn" style="text-align:right;">On End:</td>
+			<input type="hidden" id="on_series_end" name="on_series_end" class="boxless blue" value="{% if entry.type and 'series' in entry.type %}{{ entry.type.series.on_series_end }}{% endif %}" required>
+			<td class="box {% if entry.type and 'series' in entry.type %}{% if entry.type.series.on_series_end == 'repeat' %}selected{% else %}blue{% endif %}{% endif %}" onclick="toggleOnEndType(this, 'on_series_end', 'repeat')">Repeat</td>
+			<td class="box {% if entry.type and 'series' in entry.type %}{% if entry.type.series.on_series_end == 'reschedule_similar' %}selected{% else %}blue{% endif %}{% endif %}" onclick="toggleOnEndType(this, 'on_series_end', 'reschedule_similar')">Similar</td>
+			<td class="box {% if entry.type and 'series' in entry.type %}{% if entry.type.series.on_series_end == 'reschedule_rating' %}selected{% else %}blue{% endif %}{% endif %}" onclick="toggleOnEndType(this, 'on_series_end', 'reschedule_rating')">Same Rating</td>
+			<td class="box {% if entry.type and 'series' in entry.type %}{% if entry.type.series.on_series_end == 'reschedule_template' %}selected{% else %}blue{% endif %}{% endif %}" onclick="toggleOnEndType(this, 'on_series_end', 'reschedule_template')">Template</td>
+			<td class="box blue"></td>
+		</tr>
+        <tr>
+            <td class="box firstcolumn tall"></td>
+
+            {% set times = schedule[day]|sort %}
+            {% set time_index = times.index(time) %}
+            {% set prev_time = times[time_index - 1] if time_index > 0 else None %}
+            {% set next_time = times[time_index + 1] if time_index < times|length - 1 else None %}
+
+            <td class="box yellow tall">
+                {% if prev_time %}
+                    <a href="/edit_entry/{{ channel }}/{{ day }}/{{ prev_time }}">Previous Entry</a>
+                {% else %}
+                    Previous Entry
+                {% endif %}
+            </td>
+
+            <td class="box yellow tall">
+                {% if next_time %}
+                    <a href="/edit_entry/{{ channel }}/{{ day }}/{{ next_time }}">Next Entry</a>
+                {% else %}
+                    Next Entry
+                {% endif %}
+            </td>
+
+            <td class="box tall"></td>
+            <td class="box red tall" style="text-align:center;"><a href="{{ url_for('delete_entry', channel=channel, day=day, time=time) }}" onclick="return confirmDelete();">DELETE</a></td>
+            <td class="box tall yellow" colspan="2">
+                <button type="submit" class="boxless tall yellow">Save Changes</button>
+            </td>
+			
+        </tr>
+		</div>
+    </table>
+</form>
+
+<script>
+    const showsDetails = {{ shows_details|tojson }};
+    const moviesDetails = {{ movies_details|tojson }};
+    const entryType = {{ entry.type|tojson }};
+    const schedule = {{ schedule|tojson }};
+	const filterCategories = {{ filter_categories|tojson }};
+	console.log(filterCategories);
+	const filterShowsCell = document.getElementById('filter-shows');
+	const titleSelect = document.getElementById('title');
+	removeClassFromElement('main_content', 'hide');
+	
+	function addClassToElement(elementId, className) {
+		const element = document.getElementById(elementId);
+		if (element) {
+			element.classList.add(className);
+		}
+	}
+
+	function removeClassFromElement(elementId, className) {
+		const element = document.getElementById(elementId);
+		if (element) {
+			element.classList.remove(className);
+		}
+	}
+
+    // Function to recursively search for durationinseconds in nested objects
+    function extractDurations(obj) {
+        let totalDurationSeconds = 0;
+        let episodeCount = 0;
+
+        // Helper function for recursive DFS
+        function dfs(obj) {
+            if (Array.isArray(obj)) {
+                obj.forEach(item => dfs(item));
+            } else if (typeof obj === 'object' && obj !== null) {
+                Object.keys(obj.files).forEach(fileKey => {
+                    const episode = obj.files[fileKey];
+                    if (episode.episode_details) {
+                        const details = episode.episode_details[0];
+                        const duration_seconds = parseInt(details.fileinfo.streamdetails.video.durationinseconds);
+                        totalDurationSeconds += duration_seconds;
+                        episodeCount++;
+                    }
+                });
+            }
+        }
+
+        dfs(obj);
+
+        const meanDurationMinutes = episodeCount > 0 ? Math.round(totalDurationSeconds / 60 / episodeCount) : 'random_duration';
+		if (meanDurationMinutes == 0) {
+			meanDurationMinutes = "ERR";
+		}
+        return meanDurationMinutes;
+    }
+
+	function confirmDelete() {
+	return confirm("Are you sure you want to delete this entry?");
+	}
+
+    function updateDetails(select) {
+		console.log('Value:', select.value);
+        if (select.value.includes("random")) {
+			addClassToElement('series_duration', 'hide')
+			addClassToElement('series_rating', 'hide')
+			removeClassFromElement('ratings_fields', 'hide');
+			removeClassFromElement('random_data', 'hide');
+			removeClassFromElement('series_duration_span', 'hide');
+		} else if (select.value.includes("music_videos")) {
+			removeClassFromElement('random_data', 'hide');
+			removeClassFromElement('music_videos_fields', 'hide');
+			addClassToElement('series_episode_mode_field', 'hide');
+			addClassToElement('series_on_end_field', 'hide');
+			removeClassFromElement('tag_row', 'hide');
+			removeClassFromElement('music_videos_decades_select', 'hide')
+			removeClassFromElement('music_videos_tag_select', 'hide')
+			addClassToElement('ratings_row', 'hide');
+			addClassToElement('actor_row', 'hide');
+			addClassToElement('director_row', 'hide');
+			addClassToElement('producer_row', 'hide');
+			addClassToElement('writer_row', 'hide');
+			addClassToElement('genre_row', 'hide');
+			addClassToElement('studio_row', 'hide');
+		} else {
+			removeClassFromElement('series_duration', 'hide');
+			removeClassFromElement('series_rating', 'hide');
+			addClassToElement('ratings_fields', 'hide');
+			addClassToElement('random_data', 'hide');
+			addClassToElement('series_duration_span', 'hide');
+		const selectedDict = showsDetails[select.value];
+        const type = document.getElementById('type').value;
+
+        if (select.value.includes("series") || type.includes("series")) {
+            document.getElementById('series_id').value = selectedDict.id || 'random_id';
+            document.getElementById('series_id').textContent = selectedDict.id || 'random_id';
+            document.getElementById('series_rating').textContent = selectedDict.certification.split(':')[1] || 'NR';
+            const meanDurationMinutes = extractDurations(selectedDict);
+            document.getElementById('series_duration_minutes').textContent = meanDurationMinutes;
+            document.getElementById('show_duration_minutes').value = meanDurationMinutes;
+			console.log('Duration:', meanDurationMinutes);
+			removeClassFromElement('series_fields', 'hide');
+			addClassToElement('movies_fields', 'hide');
+        } else if (select.value.includes("movie") || type.includes("movie")) {
+            document.getElementById('movie_id').textContent = selectedDict.id || 'random_id';
+            document.getElementById('movie_duration_minutes').textContent = selectedDict.duration_minutes || 'random_duration';
+			removeClassFromElement('ratings_fields', 'hide');
+			removeClassFromElement('random_data', 'hide');
+			removeClassFromElement('movies_fields', 'hide');
+			addClassToElement('series_fields', 'hide');
+        }
+		}
+    }
+
+	// Update the updateTypeDetails function
+	function updateTypeDetails(select) {
+		const selectedType = select.value;
+		if (selectedType === 'music_videos') {
+			removeClassFromElement('random_data', 'hide');
+			removeClassFromElement('music_videos_fields', 'hide');
+			addClassToElement('series_episode_mode_field', 'hide');
+			addClassToElement('series_on_end_field', 'hide');
+			removeClassFromElement('tag_row', 'hide');
+			removeClassFromElement('music_videos_decades_select', 'hide')
+			removeClassFromElement('music_videos_tag_select', 'hide')
+			addClassToElement('movies_tag_select', 'hide')
+			addClassToElement('ratings_row', 'hide');
+			addClassToElement('actor_row', 'hide');
+			addClassToElement('director_row', 'hide');
+			addClassToElement('producer_row', 'hide');
+			addClassToElement('writer_row', 'hide');
+			addClassToElement('genre_row', 'hide');
+			addClassToElement('studio_row', 'hide');
+		} else {
+			removeClassFromElement('ratings_row', 'hide');
+			removeClassFromElement('actor_row', 'hide');
+			removeClassFromElement('director_row', 'hide');
+			removeClassFromElement('writer_row', 'hide');
+			removeClassFromElement('genre_row', 'hide');
+			removeClassFromElement('studio_row', 'hide');
+			addClassToElement('music_videos_fields', 'hide');
+		}
+		if (selectedType === 'series') {
+			removeClassFromElement('series_fields', 'hide');
+			removeClassFromElement('series_duration_field', 'hide');
+			removeClassFromElement('series_episode_mode_field', 'hide');
+			removeClassFromElement('series_on_end_field', 'hide');
+			removeClassFromElement('series_rating_select', 'hide');
+			removeClassFromElement('series_decade_select', 'hide');
+			addClassToElement('producer_row', 'hide');
+			addClassToElement('tag_row', 'hide');			
+
+			const series_title = document.getElementById('title').value;
+			if (series_title !== 'random') {
+				addClassToElement('ratings_fields', 'hide');
+				addClassToElement('random_data', 'hide');
+
+			} else {
+				// Iterate over filterCategories
+				for (const category in filterCategories) {
+					for (const type in filterCategories[category]) {
+						if (type === 'series') {
+							removeClassFromElement(type + '_' + category + '_select', 'hide');
+						} 
+					}
+				}
+			}
+		} else {
+			addClassToElement('series_fields', 'hide');
+			addClassToElement('series_duration_field', 'hide');
+			addClassToElement('series_episode_mode_field', 'hide');
+			addClassToElement('series_on_end_field', 'hide');
+			addClassToElement('series_rating_select', 'hide');
+			addClassToElement('series_decade_select', 'hide');
+			// Iterate over filterCategories
+			for (const category in filterCategories) {
+				for (const type in filterCategories[category]) {
+					if (type === 'series') {
+						addClassToElement(type + '_' + category + '_select', 'hide');
+					} 
+				}
+			}
+		}
+
+		if (selectedType === 'movie') {
+			removeClassFromElement('movie_fields', 'hide');
+			removeClassFromElement('movie_options_field', 'hide');
+			removeClassFromElement('movies_rating_select', 'hide');
+			removeClassFromElement('movies_decade_select', 'hide');
+			removeClassFromElement('ratings_fields', 'hide');
+			removeClassFromElement('random_data', 'hide');
+			removeClassFromElement('producer_row', 'hide');
+			removeClassFromElement('tag_row', 'hide');
+			// Iterate over filterCategories
+			for (const category in filterCategories) {
+				for (const type in filterCategories[category]) {
+					if (type === 'movies') {
+						removeClassFromElement(type + '_' + category + '_select', 'hide');
+					} 
+				}
+			}
+		} else {
+			addClassToElement('movie_fields', 'hide');
+			addClassToElement('movie_options_field', 'hide');
+			addClassToElement('movies_rating_select', 'hide');
+			addClassToElement('movies_decade_select', 'hide');
+			// Iterate over filterCategories
+			for (const category in filterCategories) {
+				for (const type in filterCategories[category]) {
+					if (type === 'movies') {
+						addClassToElement(type + '_' + category + '_select', 'hide');
+					} 
+				}
+			}
+		}
+	}
+
+    function toggleEpisodeMode(button, blockName, type) {
+        const cellId = button.parentElement.id;
+        if (cellId) {
+            const cellsInRow = document.querySelectorAll('#' + cellId + ' .box');
+            cellsInRow.forEach(cell => {
+                cell.classList.remove('selected');
+                cell.classList.add('blue');
+            });
+
+            button.classList.toggle('selected');
+            button.classList.remove('blue');
+
+            document.getElementById(blockName).value = type;
+            console.log('Value:', type);
+        }
+    }
+
+	function toggleDOW(button, type) {
+		// Get the value of dow from the hidden input field as a string
+		let dowInput = document.getElementById('dow_input').value;
+
+		// If dowInput is using single quotes or otherwise invalid, clean it up
+		let sanitizedInput = dowInput
+			.replace(/'/g, '"') // Replace single quotes with double quotes
+			.replace(/(\w+),/g, '"$1",') // Wrap unquoted strings with double quotes
+			.replace(/(\w+)]/g, '"$1"]'); // Ensure closing square brackets are handled properly
+
+		// Parse the value to an array (or initialize as an empty array if it's invalid)
+		let dow;
+		try {
+			dow = JSON.parse(sanitizedInput) || [];
+		} catch (e) {
+			dow = [];  // If parsing fails, initialize as an empty array
+			console.error("Error parsing dow_input:", sanitizedInput);
+		}
+
+		console.log('Value:', type);
+		console.log('Current dow array:', dow);
+
+		// Check if type is already in the array
+		if (dow.includes(type)) {
+			addClassToElement(button, 'blue');
+			removeClassFromElement(button, 'selected');
+			// Remove the day from the array
+			dow = dow.filter(day => day !== type);
+			console.log('Removing ', type, " from array.");
+		} else {
+			addClassToElement(button, 'selected');
+			removeClassFromElement(button, 'blue');
+			// Add the day to the array
+			dow.push(type);
+			console.log('Adding ', type, " to array.");
+		}
+
+		// Log the updated array for debugging
+		console.log('Updated dow array:', dow);
+
+		// Update the hidden input with the new array as a JSON string
+		document.getElementById('dow_input').value = JSON.stringify(dow);
+	}
+
+	// Function to add or remove a day in the hidden array input
+	function toggleDayInArray(day) {
+		const dowInput = document.getElementById('dow_input');
+		let dowArray = dowInput.value.split(',');
+
+		// If day exists, remove it, else add it
+		if (dowArray.includes(day)) {
+			dowArray = dowArray.filter(d => d !== day); // Remove day from array
+		} else {
+			dowArray.push(day); // Add day to array
+		}
+
+		// Update the hidden input value
+		dowInput.value = dowArray.join(',');
+		console.log('Updated days of week:', dowInput.value);
+	}
+
+
+    function toggleMediaType(button, blockName, type) {
+        const cellId = button.parentElement.id;
+        if (cellId) {
+            const cellsInRow = document.querySelectorAll('#' + cellId + ' .box');
+            cellsInRow.forEach(cell => {
+                cell.classList.remove('selected');
+                cell.classList.add('blue');
+            });
+
+            button.classList.toggle('selected');
+            button.classList.remove('blue');
+
+            document.getElementById(blockName).value = type;
+            console.log('Value:', type);
+        }
+    }
+
+    function toggleOnEndType(button, blockName, type) {
+        const cellId = button.parentElement.id;
+        if (cellId) {
+            const cellsInRow = document.querySelectorAll('#' + cellId + ' .box');
+            cellsInRow.forEach(cell => {
+                cell.classList.remove('selected');
+                cell.classList.add('blue');
+            });
+
+            button.classList.toggle('selected');
+            button.classList.remove('blue');
+
+            document.getElementById(blockName).value = type;
+            console.log('Value:', type);
+        }
+    }
+
+    function toggleType(button, inputId, type) {
+        const rowCells = button.parentElement.querySelectorAll('.box');
+        rowCells.forEach(cell => {
+            cell.classList.remove('selected');
+            cell.classList.add('blue');
+        });
+
+        button.classList.add('selected');
+        button.classList.remove('blue');
+
+        const hiddenInput = document.getElementById(inputId);
+		const inputValueFrom = hiddenInput.value;
+        hiddenInput.value = type;
+
+        if (typeof hiddenInput.onchange === 'function') {
+            hiddenInput.onchange();
+        } else {
+            updateTypeDetails(hiddenInput);
+        }
+		
+		if (inputValueFrom !== 'series' && type === 'series') {
+			removeClassFromElement('random_data', 'hide');
+		}
+
+        console.log('Type selected:', type);
+    }
+
+	function toggleLinkMode() {
+		const cell = document.getElementById('link-mode-cell');
+		const linkModeInput = document.getElementById('link_mode');
+		const linkModeSelect = document.getElementById('link_mode_select');
+		const linkSelectCell = document.getElementById('link_select_cell');
+		
+		cell.classList.toggle('selected');
+		linkModeSelect.classList.toggle('hide');
+		linkSelectCell.classList.toggle('selected');
+		
+		if (cell.classList.contains('selected')) {
+			linkModeInput.value = 'enabled';
+		} else {
+			linkModeInput.value = 'disabled';
+		}
+	}
+	function toggleMVLinkMode() {
+		const mvcell = document.getElementById('mv-link-mode-cell');
+		const mvlinkModeInput = document.getElementById('mv-link_mode');
+		const mvlinkModeSelect = document.getElementById('mv-link_mode_select');
+		const mvlinkSelectCell = document.getElementById('mv-link_select_cell');
+		
+		mvcell.classList.toggle('selected');
+		mvlinkModeSelect.classList.toggle('hide');
+		mvlinkSelectCell.classList.toggle('selected');
+		
+		if (cell.classList.contains('selected')) {
+			mvlinkModeInput.value = 'enabled';
+		} else {
+			mvlinkModeInput.value = 'disabled';
+		}
+	}
+
+    // Filter shows based on the schedule
+    function filterShows() {
+        const scheduledIds = new Set();
+
+        // Collect all scheduled series ids
+        for (const day in schedule) {
+            for (const time in schedule[day]) {
+                const entry = schedule[day][time];
+                if (entry.type && entry.type.series && entry.type.series.id) {
+                    scheduledIds.add(entry.type.series.id);
+                }
+            }
+        }
+
+        // Filter options in the dropdown
+        const options = titleSelect.options;
+        for (let i = 0; i < options.length; i++) {
+            const option = options[i];
+            if (scheduledIds.has(option.value)) {
+                option.style.display = 'none';
+            } else {
+                option.style.display = '';
+            }
+        }
+    }
+
+    filterShowsCell.addEventListener('click', function() {
+        filterShowsCell.classList.toggle('selected');
+        filterShowsCell.classList.toggle('blue');
+        if (filterShowsCell.classList.contains('selected')) {
+            filterShows();
+        } else {
+            // Show all options
+            const options = titleSelect.options;
+            for (let i = 0; i < options.length; i++) {
+                options[i].style.display = '';
+            }
+        }
+    });
+
+	function addHoverEffect(element) {
+		element.classList.add('hover');
+	}
+
+	function removeHoverEffect(element) {
+		element.classList.remove('hover');
+	}
+
+	function updateRatings(action) {
+		const seriesRatingSelect = document.getElementById('series_rating_select');
+		const moviesRatingSelect = document.getElementById('movies_rating_select');
+		let selectedRating = '';
+
+		if (!seriesRatingSelect.classList.contains('hide')) {
+			selectedRating = seriesRatingSelect.value;
+		} else if (!moviesRatingSelect.classList.contains('hide')) {
+			selectedRating = moviesRatingSelect.value;
+		}
+
+		let targetCellId;
+		if (action === 'allow') {
+			targetCellId = 'allow_ratings_cell';
+		} else if (action === 'forbid') {
+			targetCellId = 'forbid_ratings_cell';
+		}
+
+		const targetCell = document.getElementById(targetCellId);
+		if (targetCell.value) {
+			targetCell.textContent += ', ' + selectedRating;
+			targetCell.value += ', ' + selectedRating;
+		} else {
+			targetCell.textContent = selectedRating;
+			targetCell.value = selectedRating;
+		}
+	}
+		
+	function updateDecades(action) {
+		const seriesDecadeSelect = document.getElementById('series_decade_select');
+		const moviesDecadeSelect = document.getElementById('movies_decade_select');
+		let selectedDecade = '';
+
+		if (!seriesDecadeSelect.classList.contains('hide')) {
+			selectedDecade = seriesDecadeSelect.value;
+		} else if (!moviesDecadeSelect.classList.contains('hide')) {
+			selectedDecade = moviesDecadeSelect.value;
+		}
+		
+		let targetCellId;
+		if (action === 'allow') {
+			targetCellId = 'allow_decade_cell';
+		} else if (action === 'forbid') {
+			targetCellId = 'forbid_decade_cell';
+		}
+
+		const targetCell = document.getElementById(targetCellId);
+		if (targetCell.textContent) {
+			targetCell.textContent += ', ' + selectedDecade;
+		} else {
+			targetCell.textContent = selectedDecade;
+		}
+		console.log('Decade selected:', selectedDecade);
+		console.log('Target Cell:', targetCellId);
+	}		
+
+	function updateSection(section, action) {
+		console.log('Section Update:', section, action);
+		const seriesSelect = document.getElementById('series_' + section + '_select');
+		const moviesSelect = document.getElementById('movies_' + section + '_select');
+		let selected = '';
+
+		if (!seriesSelect.classList.contains('hide')) {
+			selected = seriesSelect.value;
+		} else if (!moviesSelect.classList.contains('hide')) {
+			selected = moviesSelect.value;
+		}
+		
+		// If the selected value is a tuple, extract the first element and clean it
+		if (selected.includes(',')) {
+			selected = selected.split(',')[0]; // Get the first element
+			selected = selected.replace(/[\(\)'"]/g, '').trim(); // Remove parentheses, single quotes, and trim any whitespace
+		} else {
+			selected = selected.replace(/[\(\)'"]/g, '').trim(); // Remove parentheses, single quotes, and trim any whitespace
+		}
+		
+		let targetCellId;
+		allowCellId = 'allow_' + section + '_cell';
+		const allowCell = document.getElementById(allowCellId);
+		forbidCellId = 'forbid_' + section + '_cell';
+		const forbidCell = document.getElementById(forbidCellId);
+
+		if (action === 'allow') {
+			if (allowCell.textContent) {
+				allowCell.value += ', ' + selected;
+				allowCell.textContent += ', ' + selected;
+				console.log('Updated Allow Cell Value:', allowCell.value);
+			} else {
+				allowCell.textContent = selected;
+				allowCell.value = selected;
+			}
+			console.log('Target Cell:', allowCellId);
+			console.log('Selected:', selected);
+			allowCell.scrollLeft = allowCell.scrollWidth;
+			
+		} else if (action === 'forbid') {
+			if (forbidCell.textContent) {
+				forbidCell.textContent += ', ' + selected;
+				forbidCell.value += ', ' + selected;
+			} else {
+				forbidCell.textContent = selected;
+				forbidCell.value = selected;
+			}
+			console.log('Target Cell:', forbidCellId);
+			console.log('Selected:', selected);
+			forbidCell.scrollLeft = allowCell.scrollWidth;
+			
+		} else {
+			allowCell.textContent = '';
+			allowCell.value = '';
+			forbidCell.textContent = '';
+			forbidCell.value = '';
+			
+			console.log('Target Cell:', allowCellId);
+			console.log('Target Cell:', forbidCellId);
+			console.log('Selected:', 'clear');
+		}
+
+	}
+
+
+	document.addEventListener('DOMContentLoaded', function() {
+
+		const typeSelect = document.getElementById('type');
+		//updateTypeDetails(typeSelect);
+
+		// Ensure updateDetails is called after DOM is fully loaded
+		updateDetails(typeSelect);
+		
+
+		// Call the function on page load to ensure the correct sections are displayed initially
+		updateTypeDetails();
+
+		// Add an event listener to the hidden input to update sections when its value changes
+		typeSelect.addEventListener('change', updateTypeDetails);
+		
+	});
+</script>
+
+{% endblock %}

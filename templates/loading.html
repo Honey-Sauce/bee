@@ -1,0 +1,96 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>	
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script>
+	var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+
+	socket.on('connect', function() {
+		console.log('WebSocket connected. Registering client.');
+		socket.emit('register', { data: 'Client connected' });
+	});
+
+	socket.on('process_output', function(msg) {
+		var output = document.getElementById('output');
+		var output_buffer = document.getElementById('output_buffer');
+		var outputBuffer = outputBuffer || [];
+
+		if (msg.return) {
+			// Final output or error
+			output.textContent += msg.data + '\n';
+		} else {
+			// Add to the rolling output buffer
+			outputBuffer.push(msg.data);
+			if (outputBuffer.length > 6) {
+				outputBuffer.shift();
+			}
+			output_buffer.textContent = outputBuffer.join('\n');
+		}
+
+		output_buffer.scrollTop = output_buffer.scrollHeight;
+	});
+</script>
+<script>
+	var socket = io();
+	var outputBuffer = ['Output Log Start...'];
+
+	function checkPreviousOutput() {
+		fetch('/check_process_output')
+			.then(response => response.json())
+			.then(data => {
+				outputBuffer = data.output_buffer;
+
+				// Display the stored buffer
+				var output_buffer = document.getElementById('output_buffer');
+				output_buffer.textContent = outputBuffer.join('\n');
+				output_buffer.scrollTop = output_buffer.scrollHeight;
+			});
+	}
+
+	document.addEventListener('DOMContentLoaded', function() {
+        {% if pid %}
+            var pid = {{ pid | tojson | safe }};
+            // Emit an event to the server to start capturing the output of the existing process
+            socket.emit('capture_existing_process', { pid: pid });
+        {% else %}
+            var pid = null;
+        {% endif %}
+    });
+	// Get the script name from the select dropdown
+	var script = 'scheduler.py';
+	// Get the additional arguments from the input field
+
+	var args = "--mode,create,--file,{{ template_file }}";
+	// Emit the script and arguments to the server using Socket.IO
+	socket.emit('start_process', { script: script, arguments: args });
+
+	socket.on('process_output', function(msg) {
+		var output = document.getElementById('output');
+		var output_buffer = document.getElementById('output_buffer');
+
+		if (msg.return) {
+			outputBuffer.push(msg.data);
+		} else if (msg.data.length > 0) {
+			outputBuffer.push(msg.data);
+			if (outputBuffer.length > 50000) {
+				outputBuffer.shift();
+			}
+			output_buffer.textContent = outputBuffer.join('\n');
+		}
+
+		if (msg.return) {
+			output.scrollTop = output.scrollHeight;
+		} else {
+			output_buffer.scrollTop = output_buffer.scrollHeight;
+		}
+	});
+</script>
+<tr>
+	<td class="box blue ultratall totalspan"><pre id="output_buffer" style="text-align:left;max-height:385px;overflow-y:auto;white-space:pre-wrap;"></pre></td>
+</tr>
+<tr>
+	<td class="box blue totalspan" id="output" style="text-align:left;"></td>
+</tr>
+{% endblock %}

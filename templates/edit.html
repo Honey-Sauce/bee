@@ -1,0 +1,394 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<form action="{{ url_for('edit', template_file=current_file) }}" method="post">
+
+	<table>
+	<tr>
+	<td class="box blue firstcolumn">{{ current_file.split('.')[0] }}</td>
+	<td col="5" class="box blue fullspan yellow">EDIT CHANNEL TEMPLATE</td>				
+	</tr>
+	{% set unique_genres = [] %}
+	{% set unique_ratings = [] %}
+	{% set unique_decades = [] %}
+
+	{% for show_key, show_data in shows_data.items() %}
+		{% if show_data.genre is defined %}
+			{% if show_data.genre is string %}
+				{% set _ = unique_genres.append(show_data.genre) %}
+			{% elif show_data.genre is iterable %}
+				{% set _ = unique_genres.extend(show_data.genre) %}
+			{% endif %}
+		{% endif %}
+		{% if show_data.certification is defined %}
+			{% if show_data.certification is string %}
+				{% set parts = show_data.certification.split('/') %}
+				{% set certification_text = parts[0].split(':')[-1].strip() %}
+				{% set _ = unique_ratings.append(certification_text) %}
+			{% elif show_data.certification is iterable %}
+				{% for certification in show_data.certification %}
+					{% set parts = certification.split(':') %}
+					{% set certification_text = parts[0].split(':')[-1].strip() %}
+					{% set _ = unique_ratings.append(certification_text) %}
+				{% endfor %}
+			{% endif %}
+		{% endif %}
+		{% if show_data.year is defined %}
+			{% if show_data.year is string %}
+				{% set _ = unique_decades.append(show_data.year[:3] ~ '0s') %}
+			{% endif %}
+		{% endif %}					
+		
+	{% endfor %}
+	{% for movie_key, movie_data in movies_data.items() %}
+		{% if movie_data.certification is defined and movie_data.certification is string %}
+			{% set parts = movie_data.certification.split('/') %}
+			{% set certification_text = parts[0].split(':')[-1].strip() %}
+			{% set _ = unique_ratings.append(certification_text) %}
+		{% elif movie_data.certification is iterable %}
+			{% for certification in movie_data.certification %}
+				{% set parts = certification.split('/') %}
+				{% set certification_text = parts[0].split(':')[-1].strip() %}
+				{% set _ = unique_ratings.append(certification_text) %}
+			{% endfor %}
+		{% endif %}
+		{% if movie_data.year is defined %}
+			{% if movie_data.year is string %}
+				{% set _ = unique_decades.append(movie_data.year[:3] ~ '0s') %}
+			{% endif %}
+		{% endif %}		
+	{% endfor %}
+
+	
+	{% set unique_genres = unique_genres | unique | sort %}				
+	{% set unique_ratings = unique_ratings | unique | sort %}
+	{% set unique_decades = unique_decades | unique | sort %}
+	
+	<!-- Block Entries for 24 hours -->
+	{% set block_names = ['Morning', 'Midday', 'Afternoon', 'PrimeTime', 'LateNight', 'LateLate'] %}
+	{% for block_name, block_data in data.items() %}
+	<tr>
+		<td class="box yellow firstcolumn" type="text" id="{{ block_name }}-block_name" name="{{ block_name }}-block_name">{{ block_name }}</td>
+		
+		<td class="box yellow">
+			<select class="boxless yellow" id="{{ block_name }}-genres" name="{{ block_name }}-genres[]">
+					<option disabled selected value="">Genres</option>
+				{% for genre in unique_genres %}
+					<option value="{{ genre }}">{{ genre }}</option>
+				{% endfor %}
+			</select>
+		</td>
+		<td class="box yellow">
+			<select class="boxless yellow" id="{{ block_name }}-ratings" name="{{ block_name }}-ratings[]">
+					<option disabled selected value="">Ratings</option>
+				{% for rating in unique_ratings %}
+					<option value="{{ rating }}">{{ rating }}</option>
+				{% endfor %}
+			</select>
+		</td>
+		<td class="box yellow">
+			<select class="boxless yellow" id="{{ block_name }}-decades" name="{{ block_name }}-decades[]">
+					<option disabled selected value="">Decades</option>
+				{% for decade in unique_decades %}
+					<option value="{{ decade }}">{{ decade }}</option>
+				{% endfor %}
+			</select>
+		</td>
+		<td class="box yellow">Day Type</td>
+		<td class="box yellow">Media Type</td>
+	</tr>
+	<tr>
+		<td class="box blue firstcolumn" type="text"><input class="boxless blue" type="time" id="{{ block_name }}-start_time" name="{{ block_name }}-start_time" value="{{ block_data.start_time }}" required>
+
+		</td>
+
+		<td class="box blue" type="text">
+			<a href="#" onclick="addSelectedGenre('{{ block_name }}', 'allowedGenresList')">Allow</a>
+		</td>
+
+		<td class="box blue" type="text">
+			<a href="#" onclick="addSelectedRating('{{ block_name }}', 'allowedRatingsList')">Allow</a>
+		</td>
+		<td class="box blue">
+			<a href="#" onclick="addSelectedDecade('{{ block_name }}', 'allowedDecadesList')">Allow</a>
+		</td>
+		
+		<td class="box block_{{ block_name }}_column {% if block_data.complexity == 'daily' %}selected {% else %}blue {% endif %}" type="text" id="{{ block_name }}-day-type" name="{{ block_name }}-day-type">
+			<a href="#" onclick="toggleDayType(this, '{{ block_name }}', 'daily')">Daily</a>
+		</td>
+		
+		<td class="box {% if block_data.options == 'both' %}selected {% else %}blue {% endif %} block_{{ block_name }}_options " type="text" id="{{ block_name }}-options" name="{{ block_name }}-options">
+			<a href="#" onclick="toggleMediaType(this, '{{ block_name }}', 'both')">Default</a>
+		</td>
+	</tr>
+	<tr>
+		<td class="box blue firstcolumn" style="border-top:none; border-bottom:none;">
+			<input type="time" class="boxless blue" id="{{ block_name }}-end_time" name="{{ block_name }}-end_time" value="{{ block_data.end_time }}" required>
+		</td>
+
+		<td class="box blue">
+			<a href="#" onclick="addSelectedGenre('{{ block_name }}', 'forbiddenGenresList')">Forbid</a>
+		</td>
+
+		<td class="box blue">
+			<a href="#" onclick="addSelectedRating('{{ block_name }}', 'forbiddenRatingsList')">Forbid</a>
+		</td>
+		<td class="box blue">
+			<a href="#" onclick="addSelectedDecade('{{ block_name }}', 'forbiddenDecadesList')">Forbid</a>
+		</td>
+
+		<td class="box block_{{ block_name }}_column {% if block_data.complexity == 'everyday' %}selected {% else %}blue {% endif %}" type="text" id="{{ block_name }}-day-type" name="{{ block_name }}-day-type">
+			<a href="#" onclick="toggleDayType(this, '{{ block_name }}', 'everyday')">Weekly</a>
+		</td>
+		<td class="box block_{{ block_name }}_options {% if block_data.options == 'movies' %}selected {% else %}blue {% endif %}" type="text" id="{{ block_name }}-options" name="{{ block_name }}-options">
+			<a href="#" onclick="toggleMediaType(this, '{{ block_name }}', 'movies')">Movies</a>
+		</td>
+	</tr>
+	<tr>
+		<td class="box blue yellow firstcolumn smallfont" style="border-top:none;">ALLOWED</td>
+
+		<td class="box blue" id='{{ block_name }}-allowedGenres'>
+			<input type="text" class="boxless blue" id="{{ block_name }}-allowed_genres" name="{{ block_name }}-allowed_genres" value="{{ block_data.allowed_genres }}">
+			
+		</td>
+		<td class="box blue">
+			<input type="text" class="boxless blue" id="{{ block_name }}-allowed_ratings" name="{{ block_name }}-allowed_ratings" value="{{ block_data.allowed_ratings }}">
+		</td>
+		<td class="box blue">
+			<input type="text" class="boxless blue" id="{{ block_name }}-allowed_decades" name="{{ block_name }}-allowed_decades" value="{{ block_data.allowed_decades }}">
+		</td>
+		
+		<td class="box block_{{ block_name }}_column {% if block_data.complexity == 'weekday' %} selected {% else %}blue {% endif %}" type="text" id="{{ block_name }}-day-type" name="{{ block_name }}-day-type">
+			<a href="#" onclick="toggleDayType(this, '{{ block_name }}', 'weekday')">Weekday/End</a>
+		</td>
+		
+		<td class="box block_{{ block_name }}_options {% if block_data.options == 'shows' %}selected {% else %}blue {% endif %}" type="text" id="{{ block_name }}-options" name="{{ block_name }}-options">
+			<a href="#" onclick="toggleMediaType(this, '{{ block_name }}', 'shows')">Shows</a>
+		</td>
+	</tr>
+	<tr>
+		<td class="box yellow blue firstcolumn smallfont" style="border-top:none;">FORBIDDEN</td>
+
+		<td class="box blue" id='{{ block_name }}-forbiddenGenres'>
+			<input type="text" class="boxless blue" id="{{ block_name }}-forbidden_genres" name="{{ block_name }}-forbidden_genres" value="{{ block_data.forbidden_genres }}">
+			
+		</td>
+		<td class="box blue">
+			<input type="text" class="boxless blue" id="{{ block_name }}-forbidden_ratings" name="{{ block_name }}-forbidden_ratings" value="{{ block_data.forbidden_ratings }}">
+		</td>
+		<td class="box blue">
+			<input type="text" class="boxless blue" id="{{ block_name }}-forbidden_decades" name="{{ block_name }}-forbidden_decades" value="{{ block_data.forbidden_decades }}">
+		</td>
+
+		<td class="box block_{{ block_name }}_column {% if block_data.complexity == 'even_odd' %} selected {% else %}blue {% endif %}" type="text" id="{{ block_name }}-day-type" name="{{ block_name }}-day-type">
+			<a href="#" onclick="toggleDayType(this, '{{ block_name }}', 'even_odd')">Even/Odd</a>
+		</td>
+
+		<td class="box block_{{ block_name }}_options {% if block_data.options == 'random' %}selected {% else %}blue {% endif %}" type="text" id="{{ block_name }}-options" name="{{ block_name }}-options">
+			<a href="#" onclick="toggleMediaType(this, '{{ block_name }}', 'random')">All Random</a>
+			
+		</td>
+		
+	</tr>
+	<tr><td><input type="hidden" id="{{ block_name }}-optionsHidden" name="{{ block_name }}-optionsHidden" value="{{ block_data.options }}">
+	<input type="hidden" id="{{ block_name }}-complexityHidden" name="{{ block_name }}-complexityHidden" value="{{ block_data.complexity }}">
+	<input type="hidden" id="{{ block_name }}-interstitialsHidden" name="{{ block_name }}-interstitialsHidden" value="{{ interstitials_json }}">
+	</td></tr>
+	<script>
+	// Define data variable for each block
+	var data_{{ block_name }} = data_{{ block_name }} || {};
+	data_{{ block_name }}.allowed_genres = {{ block_data.allowed_genres | default([]) | tojson | safe }};
+	data_{{ block_name }}.forbidden_genres = {{ block_data.forbidden_genres | default([]) | tojson | safe }};
+
+	
+	data_{{ block_name }}.allowed_ratings = {{ block_data.allowed_ratings | default([]) | tojson | safe }};
+	data_{{ block_name }}.forbidden_ratings = {{ block_data.forbidden_ratings | default([]) | tojson | safe }};
+	data_{{ block_name }}.allowed_decades = {{ block_data.allowed_decades | default([]) | tojson | safe }};
+	data_{{ block_name }}.forbidden_decades = {{ block_data.forbidden_decades | default([]) | tojson | safe }};
+
+
+	data_{{ block_name }}.complexity = '{{ block_data.complexity | default('daily') | tojson | safe }}';
+	data_{{ block_name }}.options = '{{ block_data.options | default('both') }}';
+	data_{{ block_name }}.interstitials = {{ block_data.interstitials | default({}) | tojson | safe }};
+	</script>
+	<script>
+		function addSelectedGenre(blockName, listType) {
+			var dropdown = document.getElementById(blockName + "-genres");
+			var allowedGenresInput = document.getElementById(blockName + "-allowed_genres");
+			var forbiddenGenresInput = document.getElementById(blockName + "-forbidden_genres");
+
+			// Get the selected option(s)
+			var selectedOptions = Array.from(dropdown.selectedOptions);
+
+			// Determine the destination input box based on listType
+			var destinationInput;
+			if (listType === 'allowedGenresList') {
+				destinationInput = allowedGenresInput;
+			} else if (listType === 'forbiddenGenresList') {
+				destinationInput = forbiddenGenresInput;
+			}
+
+			// Update data variable for the specific block
+			var selectedGenres = selectedOptions.map(option => option.value);
+
+			if (listType === 'allowedGenresList') {
+				data_{{ block_name }}.allowed_genres = (data_{{ block_name }}.allowed_genres || []).concat(selectedGenres);
+			} else if (listType === 'forbiddenGenresList') {
+				data_{{ block_name }}.forbidden_genres = (data_{{ block_name }}.forbidden_genres || []).concat(selectedGenres);
+			}
+
+			// Preserve existing text and append the selection to the beginning
+			var existingText = destinationInput.value;
+			
+			// Check if the existing text is empty before adding a comma
+			var newText = (existingText ? selectedGenres.concat(existingText.split(', ')).join(', ') : selectedGenres.join(', '));
+
+			destinationInput.value = newText;
+
+			// Clear the selection in the dropdown
+			dropdown.selectedIndex = 0;
+		}
+		function addSelectedRating(blockName, listType) {
+			var dropdown = document.getElementById(blockName + "-ratings");
+			var allowedRatingsInput = document.getElementById(blockName + "-allowed_ratings");
+			var forbiddenRatingsInput = document.getElementById(blockName + "-forbidden_ratings");
+
+			// Get the selected option(s)
+			var selectedOptions = Array.from(dropdown.selectedOptions);
+
+			// Determine the destination input box based on listType
+			var destinationInput;
+			if (listType === 'allowedRatingsList') {
+				destinationInput = allowedRatingsInput;
+			} else if (listType === 'forbiddenRatingsList') {
+				destinationInput = forbiddenRatingsInput;
+			}
+
+			// Update data variable for the specific block
+			var selectedRatings = selectedOptions.map(option => option.value);
+
+			if (listType === 'allowedRatingsList') {
+				data_{{ block_name }}.allowed_ratings = (data_{{ block_name }}.allowed_ratings || []).concat(selectedRatings);
+			} else if (listType === 'forbiddenRatingsList') {
+				data_{{ block_name }}.forbidden_ratings = (data_{{ block_name }}.forbidden_ratings || []).concat(selectedRatings);
+			}
+
+			// Preserve existing text and append the selection to the beginning
+			var existingText = destinationInput.value;
+			
+			// Check if the existing text is empty before adding a comma
+			var newText = (existingText ? selectedRatings.concat(existingText.split(', ')).join(', ') : selectedRatings.join(', '));
+
+			destinationInput.value = newText;
+
+			// Clear the selection in the dropdown
+			dropdown.selectedIndex = 0;
+		}
+		function addSelectedDecade(blockName, listType) {
+			var dropdown = document.getElementById(blockName + "-decades");
+			var allowedDecadesInput = document.getElementById(blockName + "-allowed_decades");
+			var forbiddenDecadesInput = document.getElementById(blockName + "-forbidden_decades");
+
+			// Get the selected option(s)
+			var selectedOptions = Array.from(dropdown.selectedOptions);
+
+			// Determine the destination input box based on listType
+			var destinationInput;
+			if (listType === 'allowedDecadesList') {
+				destinationInput = allowedDecadesInput;
+			} else if (listType === 'forbiddenDecadesList') {
+				destinationInput = forbiddenDecadesInput;
+			}
+
+			// Update data variable for the specific block
+			var selectedDecades = selectedOptions.map(option => option.value);
+
+			if (listType === 'allowedDecadesList') {
+				data_{{ block_name }}.allowed_decades = (data_{{ block_name }}.allowed_decades || []).concat(selectedDecades);
+			} else if (listType === 'forbiddenDecadesList') {
+				data_{{ block_name }}.forbidden_decades = (data_{{ block_name }}.forbidden_decades || []).concat(selectedDecades);
+			}
+
+			// Preserve existing text and append the selection to the beginning
+			var existingText = destinationInput.value;
+			
+			// Check if the existing text is empty before adding a comma
+			var newText = (existingText ? selectedDecades.concat(existingText.split(', ')).join(', ') : selectedDecades.join(', '));
+
+			destinationInput.value = newText;
+
+			// Clear the selection in the dropdown
+			dropdown.selectedIndex = 0;
+		}
+		function toggleDayType(button, blockName, type) {
+			// Update data variable for the specific block
+			var data = window['data_' + blockName] || {};
+
+			// Get the unique ID of the clicked "Day Type" cell
+			var cellId = button.parentElement.id;
+
+			// Ensure the cellId is not empty
+			if (cellId) {
+				// Remove 'selected' class from all cells in the same column
+				var cellsInColumn = document.querySelectorAll('.block_' + blockName + '_column[id="' + cellId + '"]');
+				cellsInColumn.forEach(cell => {
+					cell.classList.remove('selected');
+					cell.classList.add('blue');
+				});
+
+				// Toggle selected class for brightness in the clicked cell only
+				button.parentElement.classList.toggle('selected');
+				button.parentElement.classList.remove('blue');
+
+				// Update data variable for the specific block
+				data.complexity = type;
+				document.getElementById(blockName+'-complexityHidden').value = data.complexity;
+				console.log('Value:', data.complexity);
+			}
+		}
+		function toggleMediaType(button, blockName, type) {
+
+			// Update data variable for the specific block
+			var data = window['data_' + blockName] || {};
+
+			// Get the unique ID of the clicked "Day Type" cell
+			var cellId = button.parentElement.id;
+			// Ensure the cellId is not empty
+			if (cellId) {
+				// Remove 'selected' class from all cells in the same column
+				var cellsInColumn = document.querySelectorAll('.block_' + blockName + '_options[id="' + cellId + '"]');
+				cellsInColumn.forEach(cell => {
+					cell.classList.remove('selected');
+					cell.classList.add('blue');
+				});
+
+				// Toggle selected class for brightness in the clicked cell only
+				button.parentElement.classList.toggle('selected');
+				button.parentElement.classList.remove('blue');
+
+				// Update data variable for the specific block
+				data.options = type;
+
+				// Update the hidden input value
+				document.getElementById(blockName+'-optionsHidden').value = data.options;
+				console.log('Value:', data.options);
+
+			}
+		}
+
+	</script>
+	{% endfor %}
+
+	<tr><!-- Submit Button -->
+	<td class="box blue firstcolumn buttons" ><input class="boxless blue yellow firstcolumn" type="submit" value="SAVE"></td>
+	<td class="box  blue"></td>
+	<td class="box  blue"></td>
+	<td class="box  blue"></td>
+	<td class="box  blue"></td>
+	<td class="box red "><a href="{{ url_for('confirm_delete_template', template_file=current_file) }}">DELETE</a></td>
+</tr>
+	
+</form>
+</table>
+
+{% endblock %}

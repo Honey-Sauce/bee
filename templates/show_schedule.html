@@ -1,0 +1,87 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+        <!-- Loop through each channel -->
+		{{html_string|safe}}
+
+    </table>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+	<script>setInterval(location.reload, 300000);</script>
+    <script>
+		var socket = io();
+
+		let clickTimeout; // Timeout to detect double-clicks
+		let clickDelay = 300; // Time interval to wait for second click (milliseconds)
+		let params = new URLSearchParams(window.location.search);
+		let kiosk = params.get("kiosk");
+		document.querySelectorAll('.clickable').forEach((cell) => {
+			// Single-click handler
+			cell.onclick = function (event) {
+				const page = event.target.getAttribute('data-page'); // Get the page URL
+				const dialogContent = event.target.getAttribute('data-dialog'); // Get dialog content
+
+				// Check if the user clicked a clickable element with data attributes
+				if (page || dialogContent) {
+					// Clear the previous click timeout if it exists (cancel the single-click action if it's a double-click)
+					clearTimeout(clickTimeout);
+
+					// Start a new timeout to detect if this is a single-click or double-click
+					clickTimeout = setTimeout(() => {
+						// Single-click action: navigate to the page
+						if (page) {
+							console.log(`Navigating to page: ${page}`);
+							const params = new URLSearchParams(window.location.search);
+							const newUrl = page + (params.toString() ? `?${params.toString()}` : '');
+							window.location.href = newUrl; // Navigate to the page
+						}
+					}, clickDelay); // If no second click occurs within the delay, perform single-click action
+				}
+			};
+
+			// Double-click handler
+			cell.ondblclick = function (event) {
+				// Clear the single-click timeout immediately (prevent single-click from firing)
+				clearTimeout(clickTimeout);
+
+				// Double-click action: open the dialog
+				const dialogContent = event.target.getAttribute('data-dialog'); // Get dialog content
+				if (dialogContent) {
+					console.log(`Dialog box opened with content: ${dialogContent}`);
+					clientSelect(`${dialogContent}`);
+				}
+			};
+		});
+
+        // Function to format time as HH:MM
+        function formatTime(date) {
+            var hours = date.getHours();
+            var minutes = date.getMinutes();
+            if (minutes < 10) {
+                minutes = '0' + minutes;
+            }
+            return hours + ':' + minutes;
+        }
+
+        // Update the current time cell and advance time cells
+        function updateScheduleTime() {
+            var currentTime = getCurrentTime();
+            document.getElementById("now-time").innerText = formatTime(currentTime);
+            for (var i = 1; i <= 5; i++) {
+                var nextTime = new Date(currentTime);
+                nextTime.setMinutes(nextTime.getMinutes() + 30 * i);
+                document.getElementById("time-" + i).innerText = formatTime(nextTime);
+            }
+        }
+
+
+
+        // Call updateScheduleTime function when the page loads
+        window.onload = function() {
+            updateScheduleTime();
+            setInterval(updateScheduleTime, 30000); // Update every 30 seconds
+        };
+		
+    </script>
+	
+{% endblock %}

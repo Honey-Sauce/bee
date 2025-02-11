@@ -1,0 +1,499 @@
+/* Prevue C font -- re-created by Lyric West */
+@font-face {
+    font-family: Prevue-C;
+    src: url(prevue-c.ttf);
+}
+
+/* TopazPlus font -- re-created by asciiscene 
+   https://github.com/rewtnull/amigafonts */
+@font-face {
+    font-family: TopazPlus;
+    src: url(TopazPlus.ttf);
+}
+
+ /* Hide scrollbar for Chrome, Safari and Opera */
+.grid::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.grid {
+  /*-ms-overflow-style: none;  /* IE and Edge */
+  /*scrollbar-width: none;  /* Firefox */
+  width: 100%;
+  overflow: hidden;
+} 
+
+/* Amiga Workbench 1.0 cursors ported by sonninnos 
+   https://github.com/sonninnos/Amiga-Workbench-Mouse-Cursors */
+/*html {
+  cursor: url('/img/cursor/amiga_wb1_normal.png'), default;		
+}*/
+
+p {margin: 10px auto;}
+/*p, foot {cursor: url('/img/cursor/amiga_wb1_text.png'), text;}*/
+
+body {
+  background: rgb(0, 0, 51);
+}
+
+img {margin: 0 auto;display:block;}
+
+h1 {margin: 0 auto;color: rgb(204, 204, 0)!important;font-weight:100;}
+
+ul {margin: 0 auto;margin-left: auto;margin-left: -40px;}
+
+a {color: rgb(190, 190, 190); text-decoration: none;}
+
+a:hover {
+  color: white;
+}
+
+.buttons :hover {
+  filter: brightness(1.25);
+}
+
+.buttonless {
+	display: inline-block;
+	text-align: center;
+	width: 30px; /* Width of the button */
+	padding: 1px; /* Padding around the text */
+	text-decoration: none; /* Remove underline */
+}
+
+.drpdwn {
+  height:35px;
+  display: inline-block;
+  vertical-align: bottom;
+  overflow-y:hidden;
+  overflow-x:visible;
+  width: 140px;
+  
+}
+
+.drpdwn:hover {
+  overflow:visible;
+}
+
+.select {
+	position: fixed;
+	top: auto;
+	left: auto;
+	width: inherit;
+  }
+
+li {
+    font-family: "Prevue-C";
+    border: 4px solid;
+    border-top-color: rgb(200, 200, 200);
+    border-left-color: rgb(200, 200, 200);
+    border-right-color: rgb(0,0,0);
+    border-bottom-color: rgb(0,0,0);
+    width: 24.2%;
+    height: 100%;
+    padding: 5px 10px;
+    background: rgb(0, 0, 51);
+    color: rgb(200, 200, 200);
+    text-shadow: 0.5px 0.5px 0px #000, 1px 1px 0px #000, 1.5px 1.5px 0px #000, 2px 2px 0px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000;
+    font-size:18px;
+    vertical-align: middle;
+    display: inline-block;
+    letter-spacing: 1px;
+    padding-top: 1.9%;
+    padding-bottom: 1.9%;
+
+}
+
+.title {
+    text-align: center;
+    color: rgb(204, 204, 0);
+    padding-left: 38px;
+    padding-right: 12px;
+    width: 80px;
+    line-height: 23px;
+    padding-top: 4px;
+    padding-bottom: 1px;
+}
+
+.page {
+  margin: 0 auto;
+  width: 1090px;
+  box-shadow:0px 0px 15px #000;
+  
+}
+
+.tophalf {
+	background:linear-gradient(to bottom,#1518BD,#000000);
+}
+
+.imagecenter {	
+	display: flex; 
+	justify-content: center; 
+	align-items: center; 
+}
+
+.boxtop {
+	position:relative;
+    text-align: center;
+    font-family: "Prevue-C";
+    width:440px;
+
+    height:auto;
+    padding: 5px 5px;
+    color: rgb(200, 200, 200);
+    text-shadow: 0.5px 0.5px 0px #000, 1px 1px 0px #000, 1.5px 1.5px 0px #000, 2px 2px 0px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000;
+    font-size:18px;
+    vertical-align: middle;
+    display: inline-block;
+    letter-spacing: 1px;
+	overflow: hidden;
+}
+
+.box {
+    text-align: center;
+    font-family: "Prevue-C";
+	line-height: 1.2;
+    border: 4px solid;
+    border-top-color: rgb(200, 200, 200);
+    border-left-color: rgb(200, 200, 200);
+    border-right-color: rgb(17, 17, 17);
+    border-bottom-color: rgb(17, 17, 17);
+    width: 140px;
+    height: 17px;
+    padding: 5px 5px;
+    background: rgb(34, 51, 136);
+    color: rgb(200, 200, 200);
+    text-shadow: 0.5px 0.5px 0px #000, 1px 1px 0px #000, 1.5px 1.5px 0px #000, 2px 2px 0px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000;
+    font-size:18px;
+    vertical-align: middle;
+    display: inline-block;
+    letter-spacing: 1px;
+	overflow: hidden;
+}
+
+.topbox {
+    text-align: center;
+    font-family: "Prevue-C";
+	line-height: 1.12;
+    border: 4px solid;
+    border-top-color: rgb(200, 200, 200);
+    border-left-color: rgb(200, 200, 200);
+    border-right-color: rgb(17, 17, 17);
+    border-bottom-color: rgb(34, 51, 136);
+    width: 140px;
+    height: 17px;
+    padding: 5px 5px;
+    background: rgb(34, 51, 136);
+    color: rgb(200, 200, 200);
+    text-shadow: 0.5px 0.5px 0px #000, 1px 1px 0px #000, 1.5px 1.5px 0px #000, 2px 2px 0px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000;
+    font-size:18px;
+    vertical-align: middle;
+    display: inline-block;
+    letter-spacing: 1px;
+	overflow: hidden;
+}
+
+.bottombox {
+    text-align: center;
+    font-family: "Prevue-C";
+	line-height: 1.12;
+    border: 4px solid;
+	border-top-color: rgb(34, 51, 136);
+    border-left-color: rgb(200, 200, 200);
+    border-right-color: rgb(17, 17, 17);
+    border-bottom-color: rgb(17, 17, 17);
+    width: 140px;
+    height: 17px;
+    padding: 5px 5px;
+    background: rgb(34, 51, 136);
+    color: rgb(200, 200, 200);
+    text-shadow: 0.5px 0.5px 0px #000, 1px 1px 0px #000, 1.5px 1.5px 0px #000, 2px 2px 0px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000;
+    font-size:18px;
+    vertical-align: middle;
+    display: inline-block;
+    letter-spacing: 1px;
+	overflow: hidden;
+}
+
+.boxless {
+    font-family: "Prevue-C";
+    color: rgb(200, 200, 200);
+	background: rgb(34, 51, 136);
+    text-shadow: 0.5px 0.5px 0px #000, 1px 1px 0px #000, 1.5px 1.5px 0px #000, 2px 2px 0px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000;
+    font-size:18px;
+    vertical-align: middle;
+    letter-spacing: 1px;
+	width: 130px;
+}
+
+.content {
+    font-family: "Prevue-C";
+    border: 4px solid;
+    border-top-color: rgb(200, 200, 200);
+    border-left-color: rgb(0, 0, 51);
+    border-right-color: rgb(0, 0, 51);
+    border-bottom-color: rgb(0,0,0);
+    padding: 5px 10px;
+    background: rgb(0, 0, 51);
+    color: rgb(200, 200, 200);
+    text-shadow: 0.5px 0.5px 0px #000, 1px 1px 0px #000, 1.5px 1.5px 0px #000, 2px 2px 0px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000;
+    font-size:18px;
+    vertical-align: middle;
+    letter-spacing: 1px;
+	overflow: hidden;
+}
+
+.noverflow {
+	overflow: hidden;
+	max-width: 1382px;
+	min-width: 907px;
+	width: 100%;
+}
+
+a li:hover {filter: brightness(1.25);}
+
+.yellow {color: rgb(204, 204, 0);}
+.blue {background: rgb(0, 0, 51);border-right-color: rgb(0,0,0);border-bottom-color: rgb(0,0,0);}
+
+.red {
+    background: rgb(92, 0, 17);
+}
+
+.cyan {
+    background: rgb(13, 87, 196);
+}
+
+.hover {filter: brightness(1.25);}
+
+td:hover {filter: brightness(1.25);}
+
+.firstcolumn {
+	width: 100px;
+}
+
+.firsttwo {
+	width: 259px;
+}
+
+.firstthree {
+	width: 418px;
+}
+
+.allspan {
+	width: 1043px;
+}
+
+.sevenspan {
+	width: 1087px;
+}
+
+.rightspan {
+	width: 1243px;
+}
+
+.totalspan {
+	width: 1360px;
+}
+
+.truefullspan {
+	width: 928px;
+}
+
+.fullspanx {
+	width: 890px;
+}
+
+.fullspan {
+	width: 772px;
+}
+
+.halfspan {
+	width: 385px;
+}
+
+.doublespan {
+	width: 298px;
+}
+
+.trispan {
+	width: 457px;
+}
+
+.fourspan {
+	width: 615px;
+}
+
+.tall {
+	height: 55px;
+	line-height: 1.12;
+}
+
+.extratall {
+	height: 102px;
+	line-height: 1.12;
+}
+
+.ultratall {
+	height: 408px;
+	line-height: 1.12;
+}
+
+.tripletall {
+	height: 153px;
+	line-height: 1.12;
+} 
+
+.smallfont {
+	font-size:14px;
+}
+.extrasmallfont {
+	font-size:10px;
+}
+note {background: rgb(153, 34, 34)!important; width:750px!important; text-align: left!important; height: 100% !important; }
+sidenote {background: rgb(17, 102, 200)!important; width:750px!important; text-align: left!important; height: 100% !important; }
+
+foot {
+  background: rgb(0, 0, 51) !important; 
+  width: 750px !important; 
+  text-align: center!important; 
+  border-left-color: rgb(0, 0, 51) !important; 
+  border-right-color: rgb(0, 0, 51) !important;
+  padding: 18px 35px !important;
+  }
+  
+.cmd {
+  background: rgb(200,200,200);
+  font-size:25px;
+  padding:2px;
+  /*cursor: url(/img/cursor/amiga_wb2_normal.png), default;*/
+  font-family: "TopazPlus";
+}
+  
+.grid {max-height:100%;overflow-y:auto;overflow-x:hidden;}
+
+/*.unavail {cursor: url('/img/cursor/amiga_wb1_help.png'), help;}*/
+
+.logo {
+    border: 4px solid;
+    border-top-color: rgb(255, 255, 255);
+    border-left-color: rgb(255, 255, 255);
+    border-right-color: rgb(17, 17, 17);
+    border-bottom-color: rgb(17, 17, 17);
+    background: rgb(176, 178, 177);
+    color: rgb(200, 200, 200);
+    text-shadow: 0.5px 0.5px 0px #000, 1px 1px 0px #000, 1.5px 1.5px 0px #000, 2px 2px 0px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000;
+    font-size: 20px;
+    vertical-align: middle;
+    display: inline-block;
+    letter-spacing: 1px;
+}
+
+.content ul {
+  margin: 0 auto;
+}
+
+.content ul li{
+  margin: 0 auto;
+  border: none;
+  width: auto;
+  background: none;
+  padding: 0px;
+  display: list-item;
+}
+
+.spec li {
+    margin-left: 400px;
+    font-size: 17px;
+}
+table {
+    width: 100%;
+	table-layout: fixed;
+	border-collapse: collapse;
+}
+
+tr {
+  position: relative; /* Enable clipping of overflow content */
+  max-width: 100%; /* Ensure cell width doesn't exceed the table */
+  overflow: hidden; /* Hide content overflowing the cell */
+  white-space: nowrap; /* Allow text to wrap within the cell */
+}
+
+td {
+  user-select: none;
+  overflow: hidden; /* Hide content overflowing the cell */
+  white-space: normal; /* Allow text to wrap within the cell */
+  word-wrap: break-word; /* Break long words if necessary */
+}
+
+.toggle-checkbox {
+    display: none;
+}
+
+/* Style for the EDIT button */
+#editButton {
+    cursor: pointer;
+}
+
+td.selected {
+	filter: brightness(1.25);
+	}
+.hide {
+  display: none;
+}
+
+.divhide tr {
+  display: none;
+}
+
+.client-dropdown {
+    position: absolute;
+    border: 4px solid;
+    border-top-color: rgb(200, 200, 200);
+    border-left-color: rgb(200, 200, 200);
+    border-right-color: rgb(17, 17, 17);
+    border-bottom-color: rgb(17, 17, 17);
+    background: rgb(34, 51, 136);
+    color: rgb(200, 200, 200);
+    text-shadow: 0.5px 0.5px 0px #000, 1px 1px 0px #000, 1.5px 1.5px 0px #000, 2px 2px 0px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000;
+    font-family: "Prevue-C";
+    font-size: 18px;
+    width: 140px;
+    padding: 5px;
+    z-index: 9999; /* Ensure it appears above other elements */
+    display: none; /* Initially hide */
+}
+
+.client-dropdown.show {
+    display: block; /* Show when active */
+}
+
+.popup {
+    border: 4px solid;
+    border-top-color: rgb(200, 200, 200);
+    border-left-color: rgb(200, 200, 200);
+    border-right-color: rgb(17, 17, 17);
+    border-bottom-color: rgb(17, 17, 17);
+	padding: 5px 5px;
+    background:linear-gradient(to bottom,#1518BD,#000000);
+    color: rgb(200, 200, 200);
+    text-shadow: 0.5px 0.5px 0px #000, 1px 1px 0px #000, 1.5px 1.5px 0px #000, 2px 2px 0px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000;
+	
+}
+
+.popup-title {
+    font-family: "Prevue-C";
+    color: rgb(204, 204, 0);
+    text-shadow: 0.5px 0.5px 0px #000, 1px 1px 0px #000, 1.5px 1.5px 0px #000, 2px 2px 0px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000;
+    font-size:18px;
+    letter-spacing: 1px;
+}
+
+.popup-dropdown {
+    font-family: "Prevue-C";
+    color: rgb(204, 204, 0);
+	background: rgb(34, 51, 136);
+    text-shadow: 0.5px 0.5px 0px #000, 1px 1px 0px #000, 1.5px 1.5px 0px #000, 2px 2px 0px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000, 0px 0px 1px #000;
+    font-size:18px;
+    vertical-align: top;
+    letter-spacing: 1px;
+}

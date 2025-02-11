@@ -1,0 +1,26 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <h1 style="width:662px;" class="box blue">Create Channel</h1>
+    <div class="content">
+		<form action="{{ url_for('create_channel') }}" method="post">
+			<label for="new_file_name">New File Name:</label>
+			<input type="text" name="new_file_name" required>
+
+			<!-- Add input fields for each block entry -->
+			{% for block in range(24) %}
+				<label>Block {{ block + 1 }}</label>
+				<input type="hidden" name="block_index[]" value="{{ block }}">
+				<input type="text" name="block_name[]" value="Block {{ block + 1 }}" readonly>
+				<input type="time" name="start_time[]" value="{{ "%02d:00"|format(block) }}" required>
+				<input type="time" name="end_time[]" value="{{ "%02d:00"|format((block + 4) % 24) }}" required>
+				<input type="text" name="allowed_genres[]" value="Any" required>
+				<input type="text" name="allowed_ratings_movie[]" value="Any" required>
+				<input type="text" name="allowed_ratings_tv[]" value="Any" required>
+				<input type="text" name="allowed_languages[]" value="" required>
+			{% endfor %}
+
+			<input type="submit" value="Create">
+		</form>
+    </div>
+{% endblock %}

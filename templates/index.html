@@ -1,0 +1,155 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+	<table><tr>
+	<td class="box yellow firstcolumn" id='current-time'></td>
+	<td class="box yellow fullspan">BEE v.0.1.0</td>
+	<td class="box"></td>
+	<td class="box"></td>
+	<td class="box"></td>
+	</tr>
+<tr>
+	<td class="box blue tall firstcolumn" style="font-size:50px">🐝</td>
+	<td class="box blue tall fullspan" style="text-align:left">Welcome to the Broadcast Emulation Engine. This interface interacts with BEE, allowing control over playback and scheduling. Use the navigation buttons above to get started.</td>
+	<td class="box blue tall"></td>
+	<td class="box blue tall"></td>
+	<td class="box blue tall"></td>
+	</tr>
+{% if drones|length > 0 %}
+<tr>
+	<td class="box yellow firstcolumn"></td>
+	<td class="box yellow fullspan">Kiosk Mode</td>
+	<td class="box"></td>
+	<td class="box"></td>
+	<td class="box"></td>
+</tr>
+<tr>
+	<td class="box blue firstcolumn tall" style="font-size:50px">📺</td>
+	<td class="box blue fullspan tall" style="text-align:left">Select a Drone below to open the schedule grid in kiosk mode, limiting access to BEE options and settings to playback operations on a single client.</td>
+	<td class="box blue tall"></td>
+	<td class="box blue tall"></td>
+	<td class="box blue tall"></td>
+</tr>
+{% for drone in drones %}
+<tr>
+	<td class="box yellow firstcolumn"></td>
+	<td class="box yellow fullspan" onclick="window.location.href='show_schedule?kiosk={{ drone }}'">{{ drone }}</td>
+	<td class="box"></td>
+	<td class="box"></td>
+	<td class="box"></td>
+</tr>
+{% endfor %}
+{% if drones|length > 1 %}
+<tr>
+	<td class="box yellow firstcolumn"></td>
+	<td class="box yellow fullspan" onclick="window.location.href='show_schedule?kiosk=all'">All Drones</td>
+	<td class="box"></td>
+	<td class="box"></td>
+	<td class="box"></td>
+</tr>
+{% endif %}
+{% else %}
+<tr>
+	<td class="box yellow firstcolumn"></td>
+	<td class="box yellow fullspan">First Time Setup?</td>
+	<td class="box"></td>
+	<td class="box"></td>
+	<td class="box"></td>
+</tr>
+<tr>
+	<td class="box blue firstcolumn tall" style="font-size:50px">📺</td>
+	<td class="box blue fullspan tall" style="text-align:left">No Drones have been detected in the configuration. If this is your first time setting up BEE, follow these initial steps to get started.</td>
+	<td class="box blue tall"></td>
+	<td class="box blue tall"></td>
+	<td class="box blue tall"></td>
+</tr>
+<tr>
+	<td class="box blue firstcolumn" style="font-size:20px">1. </td>
+	<td class="box blue fullspan" style="text-align:left">Set media library paths and other user options in <a href="{{ url_for('settings') }}"class="yellow">SETTINGS</a></td>
+	<td class="box blue"></td>
+	<td class="box blue"></td>
+	<td class="box blue"></td>
+</tr>
+<tr>
+	<td class="box blue firstcolumn" style="font-size:20px">2. </td>
+	<td class="box blue fullspan" style="text-align:left">On the <a href="{{ url_for('select_channel') }}" class="yellow">CHANNELS</a> page, use Templates to generate channel schedules</td>
+	<td class="box blue"></td>
+	<td class="box blue"></td>
+	<td class="box blue"></td>
+</tr>
+<tr>
+	<td class="box blue firstcolumn" style="font-size:20px">3. </td>
+	<td class="box blue fullspan" style="text-align:left">Use the <a class="yellow" href="{{ url_for('clients') }}">DRONES</a> page to add client devices for playback</td>
+	<td class="box blue"></td>
+	<td class="box blue"></td>
+	<td class="box blue"></td>
+</tr>
+{% endif %}
+	</table>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>	
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script>
+	var socket = io();
+	var outputBuffer = ['Output Log Start...'];
+
+	function checkPreviousOutput() {
+		fetch('/check_process_output')
+			.then(response => response.json())
+			.then(data => {
+				outputBuffer = data.output_buffer;
+
+				// Display the stored buffer
+				var output_buffer = document.getElementById('output_buffer');
+				output_buffer.textContent = outputBuffer.join('\n');
+				output_buffer.scrollTop = output_buffer.scrollHeight;
+			});
+	}
+
+	document.addEventListener('DOMContentLoaded', function() {
+        {% if pid %}
+            var pid = {{ pid | tojson | safe }};
+            // Emit an event to the server to start capturing the output of the existing process
+            socket.emit('capture_existing_process', { pid: pid });
+        {% else %}
+            var pid = null;
+        {% endif %}
+    });
+
+	document.getElementById('start').addEventListener('click', function() {
+		// Get the script name from the select dropdown
+		var script = document.getElementById('script-select').value;
+		// Get the additional arguments from the input field
+		var args = document.getElementById('script-args').value;
+		// Emit the script and arguments to the server using Socket.IO
+		socket.emit('start_process', { script: script, arguments: args });
+	});
+
+	document.getElementById('stop').addEventListener('click', function() {
+		// Assuming you stored the PID or have access to it
+		
+		socket.emit('stop_process', );
+	});
+
+	socket.on('process_output', function(msg) {
+		var output = document.getElementById('output');
+		var output_buffer = document.getElementById('output_buffer');
+
+		if (msg.return) {
+			output.textContent = msg.data;
+		} else if (msg.data.length > 0) {
+			outputBuffer.push(msg.data);
+			if (outputBuffer.length > 6) {
+				outputBuffer.shift();
+			}
+			output_buffer.textContent = outputBuffer.join('\n');
+		}
+
+		if (msg.return) {
+			output.scrollTop = output.scrollHeight;
+		} else {
+			output_buffer.scrollTop = output_buffer.scrollHeight;
+		}
+	});
+</script>
+
+{% endblock %}

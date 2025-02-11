@@ -1,0 +1,182 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<form action="{{ url_for('interstitial_settings', template_file=current_file) }}" method="post">
+	<table>
+	<tr>
+	<td class="box blue firstcolumn">{{ current_file.split('.')[0] }}</td>
+	<td col="5" class="box blue fullspan yellow">EDIT CHANNEL INTERSTITIAL SETTINGS</td>				
+	</tr>
+	
+	<!-- Block Entries for 24 hours -->
+	{% set block_names = ['Morning', 'Midday', 'Afternoon', 'PrimeTime', 'LateNight', 'LateLate'] %}
+	{% for block_name, block_data in data.items() %}
+	<tr>
+		<td class="box yellow firstcolumn" type="text" id="{{ block_name }}-block_name" name="{{ block_name }}-block_name">{{ block_name }}</td>
+		
+		<td class="box fullspan yellow">Enter a weight value for each category</td>
+
+	</tr>
+	<tr>
+		<td class="box blue smallfont firstcolumn" type="text">Commercials:</td>
+		<td class="box blue" type="text">
+			<div>
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="decrement('{{ block_name }}-commercials')">-</a>
+				<input type="text" class="boxless blue" style="width:30px;" id="{{ block_name }}-commercials" name="{{ block_name }}-commercials" value="{% if block_data.interstitials is defined and block_data.interstitials.commercials is defined %}{{ block_data.interstitials.commercials }}{% else %}0{% endif %}" maxlength="2">
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="increment('{{ block_name }}-commercials')">+</a>
+			</div>
+		</td>
+
+		<td class="box blue smallfont" type="text">Tags:</td>
+		<td class="box blue">
+			<div>
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="decrement('{{ block_name }}-tag')">-</a>
+				<input type="text" class="boxless blue" style="width:30px;" id="{{ block_name }}-tag" name="{{ block_name }}-tag" value="{% if block_data.interstitials is defined and block_data.interstitials.tags is defined %}{{ block_data.interstitials.tags }}{% else %}0{% endif %}" maxlength="2">
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="increment('{{ block_name }}-tag')">+</a>
+			</div>
+		</td>
+		
+		<td class="box blue smallfont" type="text">Year:</td>
+		<td class="box blue">
+			<div>
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="decrement('{{ block_name }}-year')">-</a>
+				<input type="text" class="boxless blue" style="width:30px;" id="{{ block_name }}-year" name="{{ block_name }}-year" value="{% if block_data.interstitials is defined and block_data.interstitials.year is defined %}{{ block_data.interstitials.year }}{% else %}0{% endif %}" maxlength="2">
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="increment('{{ block_name }}-year')">+</a>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td class="box blue smallfont firstcolumn" type="text">Trailers:</td>
+		<td class="box blue" type="text">
+			<div>
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="decrement('{{ block_name }}-trailers')">-</a>
+				<input type="text" class="boxless blue" style="width:30px;" id="{{ block_name }}-trailers" name="{{ block_name }}-trailers" value="{% if block_data.interstitials is defined and block_data.interstitials.trailers is defined %}{{ block_data.interstitials.trailers }}{% else %}0{% endif %}" maxlength="2">
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="increment('{{ block_name }}-trailers')">+</a>
+			</div>
+		</td>
+
+		<td class="box blue smallfont" type="text">Genre:</td>
+		<td class="box blue">
+			<div>
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="decrement('{{ block_name }}-genre')">-</a>
+				<input type="text" class="boxless blue" style="width:30px;" id="{{ block_name }}-genre" name="{{ block_name }}-genre" value="{% if block_data.interstitials is defined and block_data.interstitials.genre is defined %}{{ block_data.interstitials.genre }}{% else %}0{% endif %}" maxlength="2">
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="increment('{{ block_name }}-genre')">+</a>
+			</div>
+		</td>
+		
+		<td class="box blue smallfont" type="text">Date:</td>
+		<td class="box blue">
+			<div>
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="decrement('{{ block_name }}-date')">-</a>
+				<input type="text" class="boxless blue" style="width:30px;" id="{{ block_name }}-date" name="{{ block_name }}-date" value="{% if block_data.interstitials is defined and block_data.interstitials.date is defined %}{{ block_data.interstitials.date }}{% else %}0{% endif %}" maxlength="2">
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="increment('{{ block_name }}-date')">+</a>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td class="box blue smallfont firstcolumn" type="text">Music Videos:</td>
+		<td class="box blue" type="text">
+			<div>
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="decrement('{{ block_name }}-music_videos')">-</a>
+				<input type="text" class="boxless blue" style="width:30px;" id="{{ block_name }}-music_videos" name="{{ block_name }}-music_videos" value="{% if block_data.interstitials is defined and block_data.interstitials.music_videos is defined %}{{ block_data.interstitials.music_videos }}{% else %}0{% endif %}" maxlength="2">
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="increment('{{ block_name }}-music_videos')">+</a>
+			</div>
+		</td>
+
+		<td class="box blue smallfont" type="text">Studio:</td>
+		<td class="box blue">
+			<div>
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="decrement('{{ block_name }}-studio')">-</a>
+				<input type="text" class="boxless blue" style="width:30px;" id="{{ block_name }}-studio" name="{{ block_name }}-studio" value="{% if block_data.interstitials is defined and block_data.interstitials.studio is defined %}{{ block_data.interstitials.studio }}{% else %}0{% endif %}" maxlength="2">
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="increment('{{ block_name }}-studio')">+</a>
+			</div>
+		</td>
+		
+		<td class="box blue smallfont" type="text">Scheduled:</td>
+		<td class="box blue">
+			<div>
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="decrement('{{ block_name }}-scheduled')">-</a>
+				<input type="text" class="boxless blue" style="width:30px;" id="{{ block_name }}-scheduled" name="{{ block_name }}-scheduled" value="{% if block_data.interstitials is defined and block_data.interstitials.scheduled is defined %}{{ block_data.interstitials.scheduled }}{% else %}0{% endif %}" maxlength="2">
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="increment('{{ block_name }}-scheduled')">+</a>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td class="box blue firstcolumn smallfont" type="text">Other Videos:</td>
+		<td class="box blue" type="text">
+			<div>
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="decrement('{{ block_name }}-other_videos')">-</a>
+				<input type="text" class="boxless blue" style="width:30px;" id="{{ block_name }}-other_videos" name="{{ block_name }}-other_videos" value="{% if block_data.interstitials is defined and block_data.interstitials.other_videos is defined %}{{ block_data.interstitials.other_videos }}{% else %}0{% endif %}" maxlength="2">
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="increment('{{ block_name }}-other_videos')">+</a>
+			</div>
+		</td>
+
+		<td class="box blue smallfont" type="text">Actor:</td>
+		<td class="box blue">
+			<div>
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="decrement('{{ block_name }}-actor')">-</a>
+				<input type="text" class="boxless blue" style="width:30px;" id="{{ block_name }}-actor" name="{{ block_name }}-actor" value="{% if block_data.interstitials is defined and block_data.interstitials.actor is defined %}{{ block_data.interstitials.actor }}{% else %}0{% endif %}" maxlength="2">
+				<a class="boxless buttonless buttons" style="width:30px;" onclick="increment('{{ block_name }}-actor')">+</a>
+			</div>
+		</td>
+		
+		<td class="box blue smallfont" type="text"></td>
+		<td class="box blue"></td>
+	</tr>
+	<tr>
+		<td>
+			<input type="hidden" id="{{ block_name }}-allowedGenresHidden" name="{{ block_name }}-allowedGenresHidden" value="{{ block_data.allowed_genres}}">
+			<input type="hidden" id="{{ block_name }}-forbiddenGenresHidden" name="{{ block_name }}-forbiddenGenresHidden" value="{{ block_data.forbidden_genres}}">
+			<input type="hidden" id="{{ block_name }}-allowedRatingsHidden" name="{{ block_name }}-allowedRatingsHidden" value="{{ block_data.allowed_ratings}}">
+			<input type="hidden" id="{{ block_name }}-forbiddenRatingsHidden" name="{{ block_name }}-forbiddenRatingsHidden" value="{{ block_data.forbidden_ratings}}">
+			<input type="hidden" id="{{ block_name }}-allowedDecadesHidden" name="{{ block_name }}-allowedDecadesHidden" value="{{ block_data.allowed_decades}}">
+			<input type="hidden" id="{{ block_name }}-forbiddenDecadesHidden" name="{{ block_name }}-forbiddenDecadesHidden" value="{{ block_data.forbidden_decades}}">
+			<input type="hidden" id="{{ block_name }}-optionsHidden" name="{{ block_name }}-optionsHidden" value="{{ block_data.options }}">
+			<input type="hidden" id="{{ block_name }}-complexityHidden" name="{{ block_name }}-complexityHidden" value="{{ block_data.complexity }}">
+			<input type="hidden" id="{{ block_name }}-interstitialsHidden" name="{{ block_name }}-interstitialsHidden" value="{{ interstitials_json }}">
+		</td>
+	</tr>
+	<script>
+	// Define data variable for each block
+	var data_{{ block_name }} = data_{{ block_name }} || {};
+	data_{{ block_name }}.allowed_genres = {{ block_data.allowed_genres | default([])| safe }};
+	data_{{ block_name }}.forbidden_genres = {{ block_data.forbidden_genres | default([])| safe }};
+
+	
+	data_{{ block_name }}.allowed_ratings = {{ block_data.allowed_ratings | default([])| safe }};
+	data_{{ block_name }}.forbidden_ratings = {{ block_data.forbidden_ratings | default([])| safe }};
+	data_{{ block_name }}.allowed_decades = {{ block_data.allowed_decades | default([])| safe }};
+	data_{{ block_name }}.forbidden_decades = {{ block_data.forbidden_decades | default([])| safe }};
+
+
+	data_{{ block_name }}.complexity = '{{ block_data.complexity | default('daily')| safe }}';
+	data_{{ block_name }}.options = '{{ block_data.options | default('both') }}';
+	data_{{ block_name }}.interstitials = {{ block_data.interstitials | default({})| safe }};
+	</script>
+
+	<script>
+		function increment(inputId) {
+			var input = document.getElementById(inputId);
+			input.value = parseInt(input.value) + 1;
+		}
+
+		function decrement(inputId) {
+			var input = document.getElementById(inputId);
+			input.value = parseInt(input.value) - 1;
+		}
+	</script>	
+	{% endfor %}
+
+	<tr><!-- Submit Button -->
+	<td class="box blue  firstcolumn buttons" ><input class="boxless blue yellow firstcolumn" type="submit" value="SAVE"></td>
+	<td class="box  blue"></td>
+	<td class="box  blue"></td>
+	<td class="box  blue"></td>
+	<td class="box  blue"></td>
+	<td class="box red "><a href="{{ url_for('confirm_delete_template', template_file=current_file) }}">DELETE</a></td>
+</tr>
+	
+</form>
+</table>
+
+{% endblock %}
