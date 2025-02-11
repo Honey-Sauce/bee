@@ -65,4 +65,6 @@ Each broadcast "day" begins by default at 6am, but this can vary, based on block
 
 When generating channels from templates, if BEE runs out of shows to schedule, it will schedule shows already on the schedule in Random Episode mode. To prevent this from happening, other than having more shows in your library, avoid overuse of the Daily setting in the template. Weekly or Weeday/end will require fewer shows to fill out the week and allow for more variation in rescheduling.
 
-Finally, please look over your settings carefully and enjoy!
+If you encounter bugs, or other problems, please report an Issue here. If you need help getting set up, or have feature requests or other questions, join us on [Discord](https://discord.gg/EnUkAeq). 
+
+Finally, please look over your settings carefully and enjoy! 
