@@ -1,0 +1,74 @@
+{
+    "Morning": {
+        "complexity": "daily",
+        "start_time": "06:00",
+        "end_time": "10:00",
+        "allowed_genres": "Family, Animation",
+        "forbidden_genres": "",
+        "allowed_ratings": "",
+        "forbidden_ratings": "",
+        "allowed_decades": "",
+        "forbidden_decades": "",
+        "options": "random"
+    },
+    "Midday": {
+        "complexity": "daily",
+        "start_time": "10:00",
+        "end_time": "14:00",
+        "allowed_genres": "",
+        "forbidden_genres": "",
+        "allowed_ratings": "",
+        "forbidden_ratings": "",
+        "allowed_decades": "",
+        "forbidden_decades": "",
+        "options": "random"
+    },
+    "Afternoon": {
+        "complexity": "daily",
+        "start_time": "14:00",
+        "end_time": "18:00",
+        "allowed_genres": "",
+        "forbidden_genres": "",
+        "allowed_ratings": "",
+        "forbidden_ratings": "",
+        "allowed_decades": "1990s",
+        "forbidden_decades": "",
+        "options": "random"
+    },
+    "PrimeTime": {
+        "complexity": "daily",
+        "start_time": "18:00",
+        "end_time": "22:00",
+        "allowed_genres": "",
+        "forbidden_genres": "",
+        "allowed_ratings": "",
+        "forbidden_ratings": "",
+        "allowed_decades": "",
+        "forbidden_decades": "",
+        "options": "random"
+    },
+    "LateNight": {
+        "complexity": "daily",
+        "start_time": "22:00",
+        "end_time": "02:00",
+        "allowed_genres": "",
+        "forbidden_genres": "",
+        "allowed_ratings": "R, TV-MA",
+        "forbidden_ratings": "",
+        "allowed_decades": "",
+        "forbidden_decades": "",
+        "options": "random"
+    },
+    "LateLate": {
+        "complexity": "daily",
+        "start_time": "02:00",
+        "end_time": "06:00",
+        "allowed_genres": "",
+        "forbidden_genres": "",
+        "allowed_ratings": "",
+        "forbidden_ratings": "",
+        "allowed_decades": "",
+        "forbidden_decades": "",
+        "options": "random"
+    }
+}

@@ -1,0 +1,74 @@
+{
+  "Morning": {
+    "complexity": "everyday",
+    "start_time": "06:00",
+    "end_time": "10:00",
+    "allowed_genres": "",
+    "forbidden_genres": "",
+    "allowed_ratings": "",
+    "forbidden_ratings": "",
+    "allowed_decades": "2010s, 2000s",
+    "forbidden_decades": "",
+    "options": "both"
+  },
+  "Midday": {
+    "complexity": "weekday",
+    "start_time": "10:00",
+    "end_time": "14:00",
+    "allowed_genres": "",
+    "forbidden_genres": "",
+    "allowed_ratings": "",
+    "forbidden_ratings": "",
+    "allowed_decades": "2010s, 2000s",
+    "forbidden_decades": "",
+    "options": "shows"
+  },
+  "Afternoon": {
+    "complexity": "daily",
+    "start_time": "14:00",
+    "end_time": "18:00",
+    "allowed_genres": "",
+    "forbidden_genres": "",
+    "allowed_ratings": "",
+    "forbidden_ratings": "",
+    "allowed_decades": "2010s, 2000s",
+    "forbidden_decades": "",
+    "options": "movies"
+  },
+  "PrimeTime": {
+    "complexity": "weekday",
+    "start_time": "18:00",
+    "end_time": "22:00",
+    "allowed_genres": "",
+    "forbidden_genres": "",
+    "allowed_ratings": "",
+    "forbidden_ratings": "",
+    "allowed_decades": "2010s, 2000s",
+    "forbidden_decades": "",
+    "options": "both"
+  },
+  "LateNight": {
+    "complexity": "everyday",
+    "start_time": "22:00",
+    "end_time": "02:00",
+    "allowed_genres": "",
+    "forbidden_genres": "",
+    "allowed_ratings": "",
+    "forbidden_ratings": "",
+    "allowed_decades": "2000s",
+    "forbidden_decades": "",
+    "options": "both"
+  },
+  "LateLate": {
+    "complexity": "everyday",
+    "start_time": "02:00",
+    "end_time": "06:00",
+    "allowed_genres": "",
+    "forbidden_genres": "",
+    "allowed_ratings": "",
+    "forbidden_ratings": "",
+    "allowed_decades": "2010s, 2000s",
+    "forbidden_decades": "",
+    "options": "both"
+  }
+}
