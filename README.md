@@ -1,7 +1,7 @@
 # 🐝 Broadcast Emulation Engine 🐝
 *Brought to you by the Honey Sauce Collective*
 
-Take back control of your media! The Broadcast Emulation Engine puts you in the driver's seat, allowing you to create, manage, schedule and automate channels containing tv, movies, music videos and interstitial content simulating the look and feel of broadcast television with your own media library. Flip channels to your heart's content or set a single channel and let it run in the background. No more time spent navigating menus looking for something to watch or being locked into binge watching a single show for hours on end. 
+Take back control of your media! The Broadcast Emulation Engine puts you in the driver's seat, allowing you to create, manage, schedule and automate channels containing tv shows, movies, music videos and interstitial content simulating the look and feel of broadcast television with your own media library. Flip channels to your heart's content or set a single channel and let it run in the background. No more time spent navigating menus looking for something to watch or being locked into binge watching a single show for hours on end. 
 
 BEE is a multi-channel, multi-receiver automated media solution utilizing open source technologies to simulate the experience of broadcast television. Highly configurable with a web interface and channel guide, BEE allows the user to recreate the feeling of broadcast television using a local media library with Kodi-compliant NFO files.
 
