@@ -26,7 +26,7 @@ Before installing BEE, first prepare your media libraries. BEE is set up to use 
 🐝 **Set up Docker instance**. If you are going to run BEE from a Docker instance, get started by navigating to the directory containing the BEE files and run these commands:
 
 * `docker build -t bee .`
-* `docker run -v "$(pwd)":/bee -v [MEDIA LIBRARY ROOT PATH]:/libraries -d bee`
+* `docker run -v "$(pwd)":/bee -v [MEDIA LIBRARY ROOT PATH]:/library -d bee`
 
 Replace `[MEDIA LIBRARY ROOT PATH]` with the directory path to the root location of your media library. This will install dependencies from requirements.txt and start the web user interface. Once this is complete, skip down to the Configure Settings step.
 
