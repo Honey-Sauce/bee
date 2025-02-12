@@ -46,7 +46,7 @@ Replace `[MEDIA LIBRARY ROOT PATH]` with the directory path to the root location
 
 ![image](https://github.com/user-attachments/assets/590b3fe2-cbd7-4d81-be0d-d26588e6734b)
 
-🐝 **Set up Drones**. Navigate to the Drones page and create a new entry for each playback device. Once each Drone has been added, you may geneate and download a .service file for VLC. This can be used to configure systemctl to launch VLC at boot on the Drone hardware.
+🐝 **Set up Drones**. Navigate to the Drones page and create a new entry for each playback device. Once each Drone has been added, you may generate and download a .service file for VLC. This can be used to configure systemctl to launch VLC at boot on the Drone hardware. If you are not using VLC on a systemctl supporting operating system, set up VLC with the HTTP API enabled and match the settings to the information entered into the Drone settings page.
 
 ![image](https://github.com/user-attachments/assets/948533bd-62ff-4df0-a12f-bcf7073aa49a)
 
