@@ -59,6 +59,7 @@ After channels have been generated and Drones have been set up, you will see you
 
 ## Using the Web Interface 🐝
 From the schedule page, a click on a scheduled item will expand details at the top of the page. These details include the title and a description of the scheduled item alsong with the length, start time and channel details. The channel details are automatically generated for each channel, but can be user-defined. You can change the channel details through a link on the Channels page. Clicking on the times in the header will offset the schedule to start at the time clicked on, except for the first, which will adjust the schedule backwards. Clicking on the current time resets the schedule, and clicking on any channel details on the left will navigate to a page with the full upcoming schedule for that channel. On the schedule, TV shows are in blue, and movies in cyan or red. Movies in red indicate they have been selected through Link Mode and when viewing the entry details, it will display what other movie and metadata the movie is linked from.
+
 ![image](https://github.com/user-attachments/assets/2a877cc2-3e1f-4821-9e3f-1f75c805c113)
 
 ## Automated Tasks 🐝
