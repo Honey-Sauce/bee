@@ -83,7 +83,14 @@ def search_and_store_movie_details(movie_folders, output_json_path):
                     # Extracting file information from <fileinfo>
                     file_info = root.find(".//fileinfo")
                     video_info = file_info.find(".//video")
-                    audio_info = file_info.find(".//audio")
+                    try:
+                        audio_info = file_info.find(".//audio")
+                        audio_codec = audio_info.find("codec").text
+                        audio_channels = int(audio_info.find("channels").text)
+                    except AttributeError:
+                        audio_info = None
+                        audio_codec = ''
+                        audio_channels = ''
                     duration_in_seconds = int(video_info.find("durationinseconds").text)
                     
                     # Create a dictionary with file details from the NFO file
@@ -96,8 +103,8 @@ def search_and_store_movie_details(movie_folders, output_json_path):
                         'duration': duration_in_seconds,
                         'duration_ms': duration_in_seconds*1000,
                         'duration_min': round(duration_in_seconds/60),
-                        'audio_codec': audio_info.find("codec").text,
-                        'channels': int(audio_info.find("channels").text),
+                        'audio_codec': audio_codec,
+                        'channels': audio_channels,
                     }
 
                 except Exception as e:
