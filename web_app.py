@@ -136,7 +136,7 @@ def load_data(file_path):
         with open(file_path, 'r') as file:
             data = json.load(file)
         return data
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, FileNotFoundError):
         return {}
 
 def read_live_file():
@@ -145,7 +145,7 @@ def read_live_file():
         return {}
     try:
         return load_data(live_file)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, FileNotFoundError):
         return {}
 
 shows_details = load_data(os.path.join(LIBRARY_DIR, 'shows_details.json'))
@@ -2034,6 +2034,15 @@ def new_channel(template_file):
     flash(f"Creating New Channel from {template_file}", "info")
     return render_template('loading.html', live_onload=live_load(), template_file=template_file)
 
+'''@app.route('/nfo_generator/<path>', methods=['GET'])
+def new_channel(path):
+    if os.path.isdir(path) is False:
+        flash("Not a valid directory", "error")
+        return render_template(url_for('settings'), template_files=get_template_files(),live_onload=live_load())
+
+    flash(f"Generating NFO Files in {path}", "info")
+    return render_template('loading.html', live_onload=live_load(), path=path)'''
+
 '''@app.route('/new_channel/<template_file>', methods=['GET'])
 def new_channel(template_file):
     
@@ -3117,4 +3126,4 @@ def create():
 
 if __name__ == '__main__':
     #app.run(host='0.0.0.0',port=5000,debug=True)
-    socketio.run(app, host='0.0.0.0', port=int(config['Settings']['Web UI Port']), debug=True)
+    socketio.run(app, host='0.0.0.0', port=int(config['Settings']['Web UI Port']), debug=True, allow_unsafe_werkzeug=True)

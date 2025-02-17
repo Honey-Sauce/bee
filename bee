@@ -14,10 +14,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of your application files
-COPY . .
+#COPY . .
 
-# Make port 5000 available to the world outside this container
-EXPOSE 5000
+# Make port 5001 available to the world outside this container
+EXPOSE 5001
 
 # Run both scripts in parallel
 CMD ["sh", "-c", "python web_app.py & python hivemind.py & wait"]
