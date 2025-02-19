@@ -62,7 +62,8 @@ def run_scripts(on_start=False):
     ]
     for script in scripts:
         if on_start is False:
-            continue
+            if script in ['fresh_honey', 'scheduler']:
+                continue
         if script == 'fresh_honey' and datetime.now().weekday() != 6:
             continue
 
