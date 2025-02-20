@@ -72,7 +72,10 @@ def run_scripts(on_start=False):
             write_to_log(f"\nStarting: {script} at {datetime.now()}\n")  # Log script start
             # Launch the script 
             #script_module = globals()[script]
-            script_module = importlib.import_module(script)
+            if script in sys.modules:
+                script_module = imoprtlib.reload(script)
+            else:
+                script_module = importlib.import_module(script)
 
             # Redirect stdout to capture print statements
             with io.StringIO() as buf, contextlib.redirect_stdout(buf):
@@ -115,7 +118,13 @@ def main(run_on_start):
     # Run scripts
     countdown(10)
 
-    if run_on_start:
+    if run_on_start is False:
+        output = "\nRunning Initial Library Scan"
+        print(output)
+        write_to_log(output)
+        run_scripts(on_start=False)
+
+    elif run_on_start is True:
         output = "\nRunning daily scripts immediately..."
         print(output)
         write_to_log(output)
