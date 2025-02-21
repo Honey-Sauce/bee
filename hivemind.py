@@ -73,7 +73,7 @@ def run_scripts(on_start=False):
             # Launch the script 
             #script_module = globals()[script]
             if script in sys.modules:
-                script_module = imoprtlib.reload(script)
+                script_module = importlib.reload(script)
             else:
                 script_module = importlib.import_module(script)
 
