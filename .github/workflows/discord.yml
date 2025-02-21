@@ -12,4 +12,4 @@ jobs:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
           content: "🐝 A new update in **${{ github.repository }}**!\nCommit: `${{ github.event.head_commit.message }}`"
           username: "🐝 Buzz Buzz 🐝"
-          avatar-url: "https://img.itch.zone/aW1nLzEyNzYwNDA3LnBuZw==/315x250%23c/mcmfOY.png"
+          avatar-url: https://img.itch.zone/aW1nLzEyNzYwNDA3LnBuZw==/315x250%23c/mcmfOY.png
