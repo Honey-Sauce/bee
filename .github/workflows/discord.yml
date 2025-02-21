@@ -9,5 +9,7 @@ jobs:
       - name: Discord Webhook Action
         uses: tsickert/discord-webhook@v6.0.0
         with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          message: "🚀 A new update in **${{ github.repository }}**!\nCommit: `${{ github.event.head_commit.message }}`"
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          content: "🐝 A new update in **${{ github.repository }}**!\nCommit: `${{ github.event.head_commit.message }}`"
+          username: "🐝 Buzz Buzz 🐝"
+          avatar-url: "http://honey-sauce.com/beeico.png"
