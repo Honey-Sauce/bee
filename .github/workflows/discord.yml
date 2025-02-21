@@ -1,0 +1,13 @@
+name: Discord Webhook
+
+on: [push, pull_request]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Message to Discord
+        uses: Ilshidur/action-discord@master
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          message: "🚀 A new update in **${{ github.repository }}**!\nCommit: `${{ github.event.head_commit.message }}`"
