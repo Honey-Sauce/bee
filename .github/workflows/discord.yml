@@ -11,4 +11,3 @@ jobs:
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
           content: "🐝 A new update in **${{ github.repository }}**!\nCommit: `${{ github.event.head_commit.message }}`"
-          username: "🐝 Buzz Buzz 🐝"
