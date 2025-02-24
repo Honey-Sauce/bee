@@ -10,5 +10,5 @@ jobs:
         uses: tsickert/discord-webhook@v6.0.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
-          content: "🐝 Update pushed to **[${{ github.repository }}](<${{ github.server_url }}/${{ github.repository }}>)** (`${{ github.ref_name }}` branch)\n `${{ github.event.head_commit.message }}`\n [${{ github.sha }}](<${{ github.event.head_commit.url }}>)"
+          content: "Update pushed to **[${{ github.repository }}](<${{ github.server_url }}/${{ github.repository }}>)** (`${{ github.ref_name }}` branch)\n ```${{ github.event.head_commit.message }}```\n [${{ github.sha }}](<${{ github.event.head_commit.url }}>)"
           
