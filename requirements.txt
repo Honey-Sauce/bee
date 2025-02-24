@@ -1,7 +1,7 @@
 ffmpeg-python
 flask
 flask-socketio
-moviepy
+moviepy==1.0.3
 musicbrainzngs
 openai
 opencv-python

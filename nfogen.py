@@ -772,6 +772,7 @@ def generate_music_video_data(videos_directory=False,video=False):
         save_nfo_file(video, fileinfo)
         
 def generate_interstitial_video_data(videos_directory=False,video=False):
+    videos = []
     if videos_directory:
         videos = find_files_without_nfo(videos_directory)
     if video:
