@@ -2,8 +2,9 @@ import ast
 import collections
 import configparser
 import datetime
-import io
 import html
+import io
+import importlib
 import json
 import math
 import os
@@ -12,6 +13,7 @@ import pycountry
 import secrets
 import shutil
 import subprocess
+import sys
 import threading
 import unicodedata
 from datetime import timedelta
@@ -191,14 +193,21 @@ def convert_language_tag(tag):
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
+    scan = False
     titlefontsize=''
     if request.method == 'POST':
+        scan_value = request.form.get('scan', 'false')
+        scan = scan_value.lower() == "true"
         # Save changes to file
         request_form = {}
         for k,v in request.form.items():
-            s,o = k.split('_')
-            s = s.replace('-',' ')
-            o = o.replace('-',' ')
+            try:
+                s,o = k.split('_')
+                s = s.replace('-',' ')
+                o = o.replace('-',' ')
+            except:
+                s = k.replace('-',' ')
+                o = k.replace('-',' ')
             try:
                 request_form[s][o] = v
             except KeyError:
@@ -210,12 +219,13 @@ def settings():
             flash(f'Changes to {config_file} saved successfully!', 'success')
         except Exception as e:
             flash(f'Error saving config file: {e}', 'error')
+
     html_string = '<form action="/settings" method="post">'
     try:
         # Iterate through each section
         #print(json.dumps(config.sections(),indent=4))
         for section in config.sections():
-            if section.lower() == 'content' or section.lower() == 'interstitials' or section.lower() == 'fresh content settings':
+            if section.lower() == 'content' or section.lower() == 'interstitials' or section.lower() == 'fresh content settings' or section.lower() == 'scan':
                 continue
             #print(f"[{section}]")  # Print the section name
             divname = section.replace(' ','-')
@@ -417,11 +427,22 @@ def settings():
                 else:
                     html_string += '</tr>'
             html_string += '</tbody>'
-        html_string += '<tr><td class="box fullspanx"><button class="boxless fullspanx yellow" type="submit">SAVE CHANGES</button></td></tr></form>'
+        html_string += '<tr><input type="hidden" name="scan" id="scan" value=""><td class="box firstcolumn"></td><td class="box doublespan"><button class="boxless doublespan yellow" type="submit" onclick="document.getElementById(\'scan\').value=\'false\'">SAVE CHANGES</button></td><td class="box trispan"><button class="boxless trispan yellow" type="submit" onclick="document.getElementById(\'scan\').value=\'true\'">SAVE AND SCAN LIBRARY</button></td></tr></form>'
     except Exception as e:
         print(f"Error reading config file: {e}")
         flash(f'Error reading client config file: {e}', 'error')
-    return render_template('settings.html', html_string=html_string, config_file=config_file,live_onload = live_load())
+    return render_template('settings.html', html_string=html_string, config_file=config_file,live_onload = live_load(), scanned=scanners(scan))
+
+def scanners(scan=True):
+    if scan is True:
+        scanners = ["scan_movies", "scan_shows", "scan_interstitials"]
+        for scanner in scanners:
+            if scanner in sys.modules:
+                scanner_module = importlib.reload(sys.modules[scanner])
+            else:
+                scanner_module = importlib.import_module(scanner)
+            scanner_module.main()
+    return scan
 
 @app.route('/remoteservicegen',  methods=['GET'])
 def remoteservicegen():
@@ -2189,21 +2210,21 @@ def live_load():
                 episode_key = data['details'].get('key')
                 print(episode_key)
                 show_data = shows_details.get(show_key)
-                
-                episode_data = show_data['files'].get(episode_key)
-                print(episode_data.get('title'))
-                details_text += f"{episode_data['episode_details'][0].get('title')} "
-                details_text += f"(S{episode_data['episode_details'][0].get('season')}E{episode_data['episode_details'][0].get('episode')}): "
-                certification = f"{show_data.get('certification','')}"
-                try:
-                    details_text = episode_data['episode_details'][0].get('plot','')[:300]
-                except TypeError:
-                    details_text = ''
-                if len(details_text) >= 300:
-                    plot_text = episode_data['episode_details'][0].get('plot','')[:300]+"..."
-                else:
-                    plot_text = episode_data['episode_details'][0].get('plot','')
-                details_text += f"{plot_text} {episode_data['episode_details'][0].get('runtime')} mins"
+                if show_data:
+                    episode_data = show_data['files'].get(episode_key)
+                    print(episode_data.get('title'))
+                    details_text += f"{episode_data['episode_details'][0].get('title')} "
+                    details_text += f"(S{episode_data['episode_details'][0].get('season')}E{episode_data['episode_details'][0].get('episode')}): "
+                    certification = f"{show_data.get('certification','')}"
+                    try:
+                        details_text = episode_data['episode_details'][0].get('plot','')[:300]
+                    except TypeError:
+                        details_text = ''
+                    if len(details_text) >= 300:
+                        plot_text = episode_data['episode_details'][0].get('plot','')[:300]+"..."
+                    else:
+                        plot_text = episode_data['episode_details'][0].get('plot','')
+                    details_text += f"{plot_text} {episode_data['episode_details'][0].get('runtime')} mins"
                 raw_thumb_path = os.path.splitext(episode_key)[0]+'-thumb.jpg'
                 thumbnail_path = url_for('serve_show',filename=raw_thumb_path.replace(config['Settings']['Library Mount Point'],'') if os.path.exists(raw_thumb_path) else '/static/beeprev2.png')
             elif category == "movie":
