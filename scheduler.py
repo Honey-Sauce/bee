@@ -1373,6 +1373,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                     if (episode_keys[last_episode_index] == episode_keys[-1] or episode_keys[last_episode_index] == False) and 'series' in content['type']:
                         # Last Episode was the last in the series, get new show and update schedule with new show
                         print(f"{show_library[show_id]['title']} has ended.")
+                        old_show_id = show_id
                         if content['type']['series']['on_series_end'] == "repeat":
                             print("Starting show over from the beginning")
                             episode_override = "first"
@@ -1388,16 +1389,17 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                             
                             # Iterate over the schedule dictionary
                             for i_day, i_time_slots in schedule.items():
-                                for i_start_time, i_content in i_time_slots.items():
-                                    # Check if the 'type' key exists and if it contains a 'series' key
-                                    if i_content.get('type'):
-                                        for content_type, content_data in i_content['type'].items():
-                                            if content_type == "series":
-                                                series_id = content_data['id']
-                                                series_ids.append(series_id)
-                                    else:
-                                        print('type key not found')
-                                        #print(json.dumps(i_content, indent=4))
+                                if i_day in days_of_week:
+                                    for i_start_time, i_content in i_time_slots.items():
+                                        # Check if the 'type' key exists and if it contains a 'series' key
+                                        if i_content.get('type'):
+                                            for content_type, content_data in i_content['type'].items():
+                                                if content_type == "series":
+                                                    series_id = content_data['id']
+                                                    series_ids.append(series_id)
+                                        else:
+                                            print('type key not found')
+                                            #print(json.dumps(i_content, indent=4))
 
                             print(f"Scheduled Shows Detected: {len(series_ids)}")
                             filtered_similar_shows = get_similar_shows(show_id, show_library, schedule['Template'], start_time, next_start_time, start_date, series_ids)
@@ -1453,34 +1455,39 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                 if schedule_new_show >= 20:
                                     break
                                 del filtered_similar_shows[chosen_show_id]
-
-
-                            for day in days_of_week:
-
+                            print(f"Finding ended show in schedule.")
+                            for day, time_schedule in schedule.items():
+                                
+                                if day in days_of_week:
+                                    #print(f"{day[0]}-,end='')
                                 # Loop through all time slots of the current day
-                                for dtime, day_schedule in schedule.get(day, {}).items():
-                                    # Check if 'type', 'series', and 'id' exist in the nested dictionary
-                                    series = day_schedule.get('type', {}).get('series', {})
+                                    for dtime, day_schedule in time_schedule.items():
+                                        # Check if 'type', 'series', and 'id' exist in the nested dictionary
+                                        type_dict = day_schedule.get('type', {})
+                                        series = type_dict.get('series', {})
 
-                                    if series.get('id') == show_id:
-                                        episode_mode = series.get('episode_mode', '')
-                                        
-                                        # If sequential, only replace if it's at the same time
-                                        if (episode_mode == "sequential" and dtime == original_start_time.strftime('%H:%M:%S')) or episode_mode == "rerun":
-                                            schedule[day][dtime] = {}
+                                        if series.get('id') == str(old_show_id):
+                                            print(f"Series Match: {day}, {dtime}. Replacing...")
+                                            episode_mode = series.get('episode_mode', '')
 
-                                            schedule[day][dtime]['title'] = show_library[show_id]['title']
-                                            
-                                            schedule[day][dtime]['type'] = {}
-                                            schedule[day][dtime]['type']['series'] = {}
+                                            reschedule = False
+                                            if episode_mode == "rerun" or episode_mode == "sequential":
+                                                reschedule = True
+                                            if reschedule is True:
+                                                schedule[day][dtime] = {}
 
-                                            schedule[day][dtime]['type']['series']['id'] = show_id
-                                            schedule[day][dtime]['type']['series']['duration_minutes'] = round(int(chosen_show_duration) / 60)
-                                            if override_episode_mode is False:
-                                                schedule[day][dtime]['type']['series']['episode_mode'] = episode_mode
-                                            else:
-                                                schedule[day][dtime]['type']['series']['episode_mode'] = override_episode_mode
-                                            schedule[day][dtime]['type']['series']['on_series_end'] = on_series_end
+                                                schedule[day][dtime]['title'] = show_library[show_id]['title']
+                                                
+                                                schedule[day][dtime]['type'] = {}
+                                                schedule[day][dtime]['type']['series'] = {}
+
+                                                schedule[day][dtime]['type']['series']['id'] = show_id
+                                                schedule[day][dtime]['type']['series']['duration_minutes'] = round(int(chosen_show_duration) / 60)
+                                                if override_episode_mode is False:
+                                                    schedule[day][dtime]['type']['series']['episode_mode'] = episode_mode
+                                                else:
+                                                    schedule[day][dtime]['type']['series']['episode_mode'] = override_episode_mode
+                                                schedule[day][dtime]['type']['series']['on_series_end'] = on_series_end
                             '''dow = [day_of_week]
                             for day in days_of_week:
                                 if day == day_of_week:
@@ -1508,6 +1515,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                 schedule[d][original_start_time.strftime('%H:%M:%S')]['type']['series']['on_series_end'] = on_series_end'''
                             
                             # Save newly selected show to schedule file
+                            print("Saving schedule file")
                             with open(channel_schedule_file, 'w') as file:
                                 json.dump(schedule, file, indent=4)
                                 
@@ -1593,32 +1601,33 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                     break
                                 del filtered_similar_shows[chosen_show_id]
                                 
-                            for day in days_of_week:
+                            for day, time_schedule in schedule.items():
+                                print(f"Replacing old show in schedule")
+                                if day in days_of_week:
+                                # Loop through all time slots of the current day
+                                    for dtime, day_schedule in time_schedule.items():
+                                        # Check if 'type', 'series', and 'id' exist in the nested dictionary
+                                        series = day_schedule.get('type', {}).get('series', {})
 
-                                # Loop through all dtime slots of the current day
-                                for dtime, day_schedule in schedule.get(day, {}).items():
-                                    # Check if 'type', 'series', and 'id' exist in the nested dictionary
-                                    series = day_schedule.get('type', {}).get('series', {})
-
-                                    if series.get('id') == show_id:
-                                        episode_mode = series.get('episode_mode', '')
-                                        
-                                        # If sequential, only replace if it's at the same dtime
-                                        if (episode_mode == "sequential" and dtime == original_start_time.strftime('%H:%M:%S')) or episode_mode == "rerun":
-                                            schedule[day][dtime] = {}
-
-                                            schedule[day][dtime]['title'] = show_library[show_id]['title']
+                                        if series.get('id') == old_show_id:
+                                            episode_mode = series.get('episode_mode', '')
                                             
-                                            schedule[day][dtime]['type'] = {}
-                                            schedule[day][dtime]['type']['series'] = {}
+                                            # If sequential, only replace if it's at the same dtime
+                                            if episode_mode == "sequential" or episode_mode == "rerun":
+                                                schedule[day][dtime] = {}
 
-                                            schedule[day][dtime]['type']['series']['id'] = show_id
-                                            schedule[day][dtime]['type']['series']['duration_minutes'] = round(int(chosen_show_duration) / 60)
-                                            if override_episode_mode is False:
-                                                schedule[day][dtime]['type']['series']['episode_mode'] = episode_mode
-                                            else:
-                                                schedule[day][dtime]['type']['series']['episode_mode'] = override_episode_mode
-                                            schedule[day][dtime]['type']['series']['on_series_end'] = on_series_end
+                                                schedule[day][dtime]['title'] = show_library[show_id]['title']
+                                                
+                                                schedule[day][dtime]['type'] = {}
+                                                schedule[day][dtime]['type']['series'] = {}
+
+                                                schedule[day][dtime]['type']['series']['id'] = show_id
+                                                schedule[day][dtime]['type']['series']['duration_minutes'] = round(int(chosen_show_duration) / 60)
+                                                if override_episode_mode is False:
+                                                    schedule[day][dtime]['type']['series']['episode_mode'] = episode_mode
+                                                else:
+                                                    schedule[day][dtime]['type']['series']['episode_mode'] = override_episode_mode
+                                                schedule[day][dtime]['type']['series']['on_series_end'] = on_series_end
                                 
                             '''dow = [day_of_week]
                             for day in days_of_week:
@@ -1731,32 +1740,33 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                     break
                                 del filtered_similar_shows[chosen_show_id]
                                 
-                            for day in days_of_week:
-
+                            for day, time_schedule in schedule.items():
+                                print(f"Replacing old show in schedule")
+                                if day in days_of_week:
                                 # Loop through all time slots of the current day
-                                for dtime, day_schedule in schedule.get(day, {}).items():
-                                    # Check if 'type', 'series', and 'id' exist in the nested dictionary
-                                    series = day_schedule.get('type', {}).get('series', {})
+                                    for dtime, day_schedule in time_schedule.items():
+                                        # Check if 'type', 'series', and 'id' exist in the nested dictionary
+                                        series = day_schedule.get('type', {}).get('series', {})
 
-                                    if series.get('id') == show_id:
-                                        episode_mode = series.get('episode_mode', '')
-                                        
-                                        # If sequential, only replace if it's at the same time
-                                        if (episode_mode == "sequential" and dtime == original_start_time.strftime('%H:%M:%S')) or episode_mode == "rerun":
-                                            schedule[day][dtime] = {}
-
-                                            schedule[day][dtime]['title'] = show_library[show_id]['title']
+                                        if series.get('id') == old_show_id:
+                                            episode_mode = series.get('episode_mode', '')
                                             
-                                            schedule[day][dtime]['type'] = {}
-                                            schedule[day][dtime]['type']['series'] = {}
+                                            # If sequential, only replace if it's at the same time
+                                            if episode_mode == "sequential" or episode_mode == "rerun":
+                                                schedule[day][dtime] = {}
 
-                                            schedule[day][dtime]['type']['series']['id'] = show_id
-                                            schedule[day][dtime]['type']['series']['duration_minutes'] = round(int(chosen_show_duration) / 60)
-                                            if override_episode_mode is False:
-                                                schedule[day][dtime]['type']['series']['episode_mode'] = episode_mode
-                                            else:
-                                                schedule[day][dtime]['type']['series']['episode_mode'] = override_episode_mode
-                                            schedule[day][dtime]['type']['series']['on_series_end'] = on_series_end
+                                                schedule[day][dtime]['title'] = show_library[show_id]['title']
+                                                
+                                                schedule[day][dtime]['type'] = {}
+                                                schedule[day][dtime]['type']['series'] = {}
+
+                                                schedule[day][dtime]['type']['series']['id'] = show_id
+                                                schedule[day][dtime]['type']['series']['duration_minutes'] = round(int(chosen_show_duration) / 60)
+                                                if override_episode_mode is False:
+                                                    schedule[day][dtime]['type']['series']['episode_mode'] = episode_mode
+                                                else:
+                                                    schedule[day][dtime]['type']['series']['episode_mode'] = override_episode_mode
+                                                schedule[day][dtime]['type']['series']['on_series_end'] = on_series_end
                                 
                             '''dow = [day_of_week]
                             for day in days_of_week:
@@ -2538,7 +2548,7 @@ def save_last_episode_details(file_path, new_details, show_id):
     # Check if the file exists
     if os.path.exists(file_path):
         # Load the existing data
-        with open(file_path, 'r') as file:
+        with open(file_path, 'r', encoding="utf-8") as file:
             existing_details = json.load(file)
     
     # Update the existing details with new details (will only store one key-value pair)
