@@ -61,11 +61,14 @@ def search_and_store_movie_details(movie_folders, output_json_path):
         existing_movie_ids = []'''
     existing_data_dict = {}
     existing_movie_ids = []
-
+    all_movie_folders = list(movie_folders)
+    for folder in movie_folders:
+        subfolders = [os.path.join(folder,d) for d in os.listdir(folder) if os.path.isdir(os.path.join(folder,d))]
+        all_movie_folders.extend(subfolders)
     total_files = 0
     processed_files = 0
     percentage_done = 0
-    for movie_folder in movie_folders:
+    for movie_folder in all_movie_folders:
         # Scrape all NFO files in the current folder
         all_files = os.listdir(movie_folder)
         for processed_files, file in enumerate(all_files):
