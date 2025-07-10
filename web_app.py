@@ -2612,6 +2612,26 @@ def schedule(channel):
                         if entry.get("kevin_bacon_mode") is not None:
                             if entry["kevin_bacon_mode"].get('setting') is not None:
                                 cell_color = "red"
+                                if not isinstance(entry['kevin_bacon_mode'], list):
+                                    entry['kevin_bacon_mode'] = [entry['kevin_bacon_mode']]
+                                for kbm in entry['kevin_bacon_mode']:
+                                    print(kbm)
+                                    if kbm is not None:
+                                        if kbm['degree'][0] is not None:
+                                            kbm_degree = ', '.join(kbm['degree'])
+                                            if kbm['setting'] == 'certification':
+                                                kbm['setting'] = 'rating'
+                                                kbm_degree = ''
+                                                for kbmd in kbm['degree']:
+                                                    kbm_degree += kbmd.split('/')[0].split(':')[-1].strip()+' '
+                                        elif kbm['setting'] == 'credits':
+                                            kbm['setting'] = 'writer'
+                                        try:
+                                            kbm_text = f"Linked from {kbm['title']} through the {kbm['setting']} {kbm_degree.strip()}."
+                                        except UnboundLocalError:
+                                            kbm_text = ''
+                                            cell_color = 'cyan'
+                                        cell_text += f"{kbm_text} "
                         entry_date = f"({entry['type']['movie'].get('year','')})"
                         title_text += f" {entry_date}</span> "
                         movie_cast = entry['type']['movie'].get('cast')
@@ -2629,7 +2649,7 @@ def schedule(channel):
                                 # If it's a list but has fewer than two elements, handle it (e.g., use the only element or default)
                                 result = movie_cast[0].get('name') if movie_cast else ""
                             else:
-                                # Handle other unexpected cases (optional)
+                                # Handle other unexpected cases
                                 result = ""
                             cell_text += f"{result}. "
                     elif next(iter(entry["type"])).upper() == "SERIES":
@@ -2638,7 +2658,9 @@ def schedule(channel):
                             entry_date = f"Aired: {date_formatted}."
                         except:
                             entry_date = ''
-                        
+                        episode_mode = entry['type']['series'].get('episode_mode','')
+                        if episode_mode == "random":
+                            cell_color = "grey"
                         cell_text += f" {entry_date}</span> "
                     row += f'<td style="text-align:left;width:100%;" class="box {cell_color}">{title_text}</td></tr><tr title="Double-click to start channel" oncontextmenu="clientSelect({channel}); return false;"><td style="text-align:left;height:auto;min-width:907px;width:auto;" class="box {cell_color} fullspanx">'
                     
@@ -3016,6 +3038,9 @@ def show_schedule():
                                     thumb_path = url_for('serve_show',filename=os.path.join(episode_path, thumb_filename).lstrip('/')).replace(config['Settings']['Library Mount Point'],'')
                                 except:
                                     thumb_path = '/static/beeprev2.png'
+                                if series_info['episode_mode'] == "random":
+                                    cell_color = "grey"
+
                             try:
                                 if '\n' in schedule_entry['summary']:
                                     summary_text = schedule_entry['summary'].replace('\n', ' ')
