@@ -26,6 +26,13 @@ channel_templates_dir = "channel_templates"
 channels_dir = "channels"
 days_of_week = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 
+def log_schedule_change(message, log_file='schedule_change.log', show_timestamp=True):
+    timestamp = ''
+    if show_timestamp is True:
+        timestamp = f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
+    with open(log_file, 'a', encoding='utf-8') as f:
+        f.write(f"{timestamp}{message}\n")
+
 def load_json_file(file_path):
     try:
         with open(file_path, 'r') as file:
@@ -206,11 +213,12 @@ def get_filtered_show(shows_data, block_data, starting_time, ending_time, select
     print(f"Remaining Shows: {len(filtered_shows)}")
     # Calculate ending time based on show runtime
     if selected_show:
-        all_durations = []
+        '''all_durations = []
         for file_key in selected_show['files'].keys():
             for episode_details in selected_show['files'][file_key]['episode_details']:
                 all_durations.append(round(int(int(episode_details['fileinfo']['streamdetails']['video']['durationinseconds'])/60)))
-        runtime_minutes = int(statistics.median(all_durations))
+        runtime_minutes = int(statistics.median(all_durations))'''
+        runtime_minutes = selected_show['duration']
         ending_time = starting_time + datetime.timedelta(minutes=runtime_minutes)
         #ending_time = ending_time.strftime("%H:%M:%S")
     else:
@@ -1272,7 +1280,11 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                         new_end_time = next_start_time - datetime.timedelta(seconds=1)
                         new_start_time = previous_end_time + datetime.timedelta(seconds=1)
                         preempt = movie_duration_seconds - (new_end_time - new_start_time).total_seconds()
+                        if preempt < 0:
+                            preempt = 0
                         movie_duration_seconds = (new_end_time - new_start_time).total_seconds()
+                        if movie_duration_seconds < 0:
+                            continue
                         print(f"SETTING PREEMPT OF {preempt} SECONDS")
                     else:
                         # Set Delay times
@@ -1343,10 +1355,20 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                 episode_mode = "sequential"
             if content_type == 'series':
                 show_id = content['type']['series']['id']
+                show_title = content['title']
             else:
                 random_shows = get_random_shows(show_library, schedule['Template'], start_time, next_start_time, start_date)
                 show_id = random.choice(list(random_shows.keys()))
-            chosen_show = show_library[show_id]
+            try:
+                chosen_show = show_library[show_id]
+            except KeyError:
+                random_shows = get_random_shows(show_library, schedule['Template'], start_time, next_start_time, start_date)
+                chosen_show = next(
+                    (data for data in show_library.values() if show_title in data["title"]),
+                    None)
+                if chosen_show is None:
+                    show_id = random.choice(list(random_shows.keys()))
+                    chosen_show = show_library[show_id]
             all_durations = []
             for file_key in chosen_show['files'].keys():
                 for episode_details in chosen_show['files'][file_key]['episode_details']:
@@ -1364,7 +1386,19 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                 if remaining_time < show_duration_seconds * 1000 and at_least_one is True:
                     break
                 at_least_one = True
-                print(f"{start_time.strftime('%H:%M:%S')}: Scheduling {show_library[show_id]['title']}")
+
+                try:
+                    chosen_show = show_library[show_id]
+                except KeyError:
+                    random_shows = get_random_shows(show_library, schedule['Template'], start_time, next_start_time, start_date)
+                    chosen_show = next(
+                        (data for data in show_library.values() if show_title in data["title"]),
+                        None)
+                    if chosen_show is None:
+                        show_id = random.choice(list(random_shows.keys()))
+                        chosen_show = show_library[show_id]
+
+                print(f"{start_time.strftime('%H:%M:%S')}: Scheduling {chosen_show['title']}")
                 if episode_mode == 'sequential':
                     last_episode, last_episode_index, episode_keys, files = get_last_episode(show_id, last_episode_file)
                     if last_episode_index is None:
@@ -1372,11 +1406,15 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                     #print(last_episode_index)
                     if (episode_keys[last_episode_index] == episode_keys[-1] or episode_keys[last_episode_index] == False) and 'series' in content['type']:
                         # Last Episode was the last in the series, get new show and update schedule with new show
-                        print(f"{show_library[show_id]['title']} has ended.")
+                        print(f"{chosen_show['title']} has ended.")
+                        log_schedule_change("----------------------------------------",show_timestamp=False)
+                        log_schedule_change(f"\n{chosen_show['title']} ended.")
+                        log_schedule_change(f"Channel {os.path.basename(os.path.normpath(channel_dir))}: {day_of_week}, {start_time.strftime('%H:%M:%S')}",show_timestamp=False)
                         old_show_id = show_id
                         if content['type']['series']['on_series_end'] == "repeat":
                             print("Starting show over from the beginning")
                             episode_override = "first"
+                            log_schedule_change(f"{chosen_show['title']} restarted from beginning.",show_timestamp=False)
                             pass
                         if content['type']['series']['on_series_end'] == "reschedule_similar":
                             # Find a show from the similar list that fits the time slot and schedule block parameters
@@ -1402,7 +1440,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                             #print(json.dumps(i_content, indent=4))
 
                             print(f"Scheduled Shows Detected: {len(series_ids)}")
-                            filtered_similar_shows = get_similar_shows(show_id, show_library, schedule['Template'], start_time, next_start_time, start_date, series_ids)
+                            filtered_similar_shows, show_scores = get_similar_shows(show_id, show_library, schedule['Template'], start_time, next_start_time, start_date, series_ids)
                             
                             time_slot_duration = (next_start_time - start_time).total_seconds()
                             schedule_new_show = 0
@@ -1419,6 +1457,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                     # If there are no other similar shows, re-run the existing show
                                     show_id = show_id
                                     override_episode_mode = "random"
+                                    log_schedule_change(f"{chosen_show['title']} set to Random Episode Mode")
                                     chosen_show_duration = content['type']['series']['duration_minutes']
                                     schedule_new_show = 99
                                     break
@@ -1431,11 +1470,29 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                     
                                     chosen_show_files = {}
                                     while chosen_show_files == {}:
-                                        chosen_show_id = random.choice(list(filtered_similar_shows.keys()))
+                                        #chosen_show_id = random.choice(list(filtered_similar_shows.keys()))
+                                        filtered_show_scores = {}
+                                        for s in show_scores.keys():
+                                            if s in filtered_similar_shows:
+                                                filtered_show_scores[s] = show_scores[s]
+                                                #print(round(show_scores[s],5),filtered_similar_shows[s].get('title',s))
+                                                #log_schedule_change(f"{round(show_scores[s],5)}: {filtered_similar_shows[s].get('title',s)}")
+                                        sorted_show_scores = sorted(filtered_show_scores.items(), key=lambda item: item[1], reverse=True)
+                                        total_scores = len(sorted_show_scores)
+                                        top_scores_count = math.ceil(total_scores * (0.1))
+                                        top_scores = dict(sorted_show_scores[:top_scores_count])
+                                        remaining_scores = dict(sorted_show_scores[top_scores_count:])
+
+                                        for s in top_scores.keys():
+                                            print(round(show_scores[s],1),filtered_similar_shows[s].get('title',s))
+                                            log_schedule_change(f"{round(show_scores[s],1)}: {filtered_similar_shows[s].get('title',s)}",show_timestamp=False)
+
+                                        chosen_show_id = random.choice(list(top_scores.keys())) if top_scores else None
+                                        
                                         chosen_show = filtered_similar_shows[chosen_show_id]
                                         chosen_show_files = chosen_show['files']
                                     print(f"{chosen_show['title']} Selected.")
-                                    
+                                    episode_override = "first"
                                     for file_key in chosen_show['files'].keys():
                                         for episode_details in chosen_show['files'][file_key]['episode_details']:
                                             all_durations.append(round(int(int(episode_details['fileinfo']['streamdetails']['video']['durationinseconds']))))
@@ -1451,10 +1508,12 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                 except UnboundLocalError:
                                     show_id = show_id
                                     override_episode_mode = "random"
+                                    log_schedule_change("{chosen_show['title']} set to Random Episode Mode")
                                     chosen_show_duration = content['type']['series']['duration_minutes']
                                 if schedule_new_show >= 20:
                                     break
                                 del filtered_similar_shows[chosen_show_id]
+                            log_schedule_change(f"{chosen_show['title']} Selected from {len(filtered_similar_shows)} options",show_timestamp=False)
                             print(f"Finding ended show in schedule.")
                             for day, time_schedule in schedule.items():
                                 
@@ -1476,7 +1535,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                             if reschedule is True:
                                                 schedule[day][dtime] = {}
 
-                                                schedule[day][dtime]['title'] = show_library[show_id]['title']
+                                                schedule[day][dtime]['title'] = chosen_show['title']
                                                 
                                                 schedule[day][dtime]['type'] = {}
                                                 schedule[day][dtime]['type']['series'] = {}
@@ -1519,7 +1578,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                             with open(channel_schedule_file, 'w') as file:
                                 json.dump(schedule, file, indent=4)
                                 
-                            print(f"Scheduling: {show_library[show_id]['title']}")
+                            print(f"Scheduling: {chosen_show['title']}")
                             episode_override = "first"
                             time.sleep(1)
 
@@ -1564,6 +1623,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                     # If there are no other similar shows, re-run the existing show
                                     show_id = show_id
                                     override_episode_mode = "random"
+                                    log_schedule_change(f"{chosen_show['title']} set to Random Episode Mode")
                                     chosen_show_duration = content['type']['series']['duration_minutes']
                                     schedule_new_show = 99
                                     break
@@ -1584,7 +1644,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                     for file_key in chosen_show['files'].keys():
                                         for episode_details in chosen_show['files'][file_key]['episode_details']:
                                             all_durations.append(round(int(int(episode_details['fileinfo']['streamdetails']['video']['durationinseconds']))))
-                                
+                                log_schedule_change(f"{chosen_show['title']} Selected from {len(filtered_similar_shows)} options",show_timestamp=False)
                                 print("____________________")
                                 chosen_show_duration = int(statistics.median(all_durations))
                                 if time_slot_duration/3 < chosen_show_duration < time_slot_duration:
@@ -1596,6 +1656,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                 except UnboundLocalError:
                                     show_id = show_id
                                     override_episode_mode = "random"
+                                    log_schedule_change(f"{chosen_show['title']} set to Random Episode Mode")
                                     chosen_show_duration = content['type']['series']['duration_minutes']
                                 if schedule_new_show >= 20:
                                     break
@@ -1616,7 +1677,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                             if episode_mode == "sequential" or episode_mode == "rerun":
                                                 schedule[day][dtime] = {}
 
-                                                schedule[day][dtime]['title'] = show_library[show_id]['title']
+                                                schedule[day][dtime]['title'] = chosen_show['title']
                                                 
                                                 schedule[day][dtime]['type'] = {}
                                                 schedule[day][dtime]['type']['series'] = {}
@@ -1659,7 +1720,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                             with open(channel_schedule_file, 'w') as file:
                                 json.dump(schedule, file, indent=4)
                                 
-                            print(f"Scheduling: {show_library[show_id]['title']}")
+                            print(f"Scheduling: {chosen_show['title']}")
                             episode_override = "first"
                             time.sleep(1)
 
@@ -1703,6 +1764,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                     # If there are no other similar shows, re-run the existing show
                                     show_id = show_id
                                     override_episode_mode = "random"
+                                    log_schedule_change(f"{chosen_show['title']} set to Random Episode Mode")
                                     chosen_show_duration = content['type']['series']['duration_minutes']
                                     schedule_new_show = 99
                                     break
@@ -1723,7 +1785,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                     for file_key in chosen_show['files'].keys():
                                         for episode_details in chosen_show['files'][file_key]['episode_details']:
                                             all_durations.append(round(int(int(episode_details['fileinfo']['streamdetails']['video']['durationinseconds']))))
-                                
+                                log_schedule_change(f"{chosen_show['title']} Selected from {len(filtered_similar_shows)} options",show_timestamp=False)
                                 print("____________________")
                                 chosen_show_duration = int(statistics.median(all_durations))
                                 if time_slot_duration/3 < chosen_show_duration < time_slot_duration:
@@ -1735,6 +1797,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                 except UnboundLocalError:
                                     show_id = show_id
                                     override_episode_mode = "random"
+                                    log_schedule_change(f"{chosen_show['title']} set to Random Episode Mode")
                                     chosen_show_duration = content['type']['series']['duration_minutes']
                                 if schedule_new_show >= 20:
                                     break
@@ -1755,7 +1818,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                             if episode_mode == "sequential" or episode_mode == "rerun":
                                                 schedule[day][dtime] = {}
 
-                                                schedule[day][dtime]['title'] = show_library[show_id]['title']
+                                                schedule[day][dtime]['title'] = chosen_show['title']
                                                 
                                                 schedule[day][dtime]['type'] = {}
                                                 schedule[day][dtime]['type']['series'] = {}
@@ -1798,7 +1861,7 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                             with open(channel_schedule_file, 'w') as file:
                                 json.dump(schedule, file, indent=4)
                                 
-                            print(f"Scheduling: {show_library[show_id]['title']}")
+                            print(f"Scheduling: {chosen_show['title']}")
                             episode_override = "first"
                             time.sleep(1)
                         last_episode, last_episode_index, episode_keys, files = get_last_episode(show_id, last_episode_file, episode_override)
@@ -1815,9 +1878,9 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                     episode_keys = list(files.keys())
                     episode_id, episode_info = random_episode(files)
                 
-                episode_duration_seconds = int(show_library[show_id]['files'][episode_id]["episode_details"][0]["fileinfo"]["streamdetails"]["video"]["durationinseconds"])
+                episode_duration_seconds = int(chosen_show['files'][episode_id]["episode_details"][0]["fileinfo"]["streamdetails"]["video"]["durationinseconds"])
 
-                start_time, scheduled_content = schedule_series(show_library[show_id], start_time, next_start_time, episode_info, daily_schedule, episode_mode, preempted)
+                start_time, scheduled_content = schedule_series(chosen_show, start_time, next_start_time, episode_info, daily_schedule, episode_mode, preempted)
                 end_time = start_time + datetime.timedelta(seconds = int(episode_duration_seconds))
                 if end_time < datetime.datetime.strptime(start_time_keys[0], '%H:%M:%S'):
                     end_time += datetime.timedelta(days=1)
@@ -1832,31 +1895,31 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                 # Save last episode data necessary at this point here
                 if episode_mode == 'sequential':
                     last_episode_dict = {
-                        'title': show_library[show_id]['title'],
+                        'title': chosen_show['title'],
                         'episode_path': episode_id,
-                        'season_number': int(show_library[show_id]['files'][episode_id]['episode_details'][0]['season']),
-                        'episode_number': int(show_library[show_id]['files'][episode_id]['episode_details'][0]['episode'])
+                        'season_number': int(chosen_show['files'][episode_id]['episode_details'][0]['season']),
+                        'episode_number': int(chosen_show['files'][episode_id]['episode_details'][0]['episode'])
                     }
                     save_last_episode_details(last_episode_file,last_episode_dict, show_id)
                 # Check if there is time for another episode, first check at the nearest 15, then the nearest 5.
                 if end_time.minute % 15 == 0 and (next_start_time - (end_time + datetime.timedelta(seconds=1))).total_seconds() > episode_duration_seconds:
                     remaining_time = (next_start_time - (end_time + datetime.timedelta(seconds=1))).total_seconds()*1000
-                    last_episode = show_library[show_id]['files'][episode_id]
+                    last_episode = chosen_show['files'][episode_id]
                     last_episode_index = episode_keys.index(episode_id)
                     start_time = end_time + datetime.timedelta(seconds=1)
                 elif end_time.minute % 15 != 0 and (next_start_time - (end_time + datetime.timedelta(minutes=15-(end_time.minute % 15))).replace(second=0, microsecond=0)).total_seconds() > episode_duration_seconds:
                     remaining_time = (next_start_time - (end_time + datetime.timedelta(minutes=15-(end_time.minute % 15))).replace(second=0, microsecond=0)).total_seconds()*1000
-                    last_episode = show_library[show_id]['files'][episode_id]
+                    last_episode = chosen_show['files'][episode_id]
                     last_episode_index = episode_keys.index(episode_id)
                     start_time = (end_time + datetime.timedelta(minutes=15-(end_time.minute % 15))).replace(second=0, microsecond=0)
                 elif end_time.minute % 5 == 0 and (next_start_time - (end_time + datetime.timedelta(seconds=1))).total_seconds() > episode_duration_seconds:
                     remaining_time = (next_start_time - (end_time + datetime.timedelta(seconds=1))).total_seconds()*1000
-                    last_episode = show_library[show_id]['files'][episode_id]
+                    last_episode = chosen_show['files'][episode_id]
                     last_episode_index = episode_keys.index(episode_id)
                     start_time = end_time + datetime.timedelta(seconds=1)
                 elif end_time.minute % 5 != 0 and (next_start_time - (end_time + datetime.timedelta(minutes=5-(end_time.minute % 5))).replace(second=0, microsecond=0)).total_seconds() > episode_duration_seconds:
                     remaining_time = (next_start_time - (end_time + datetime.timedelta(minutes=5-(end_time.minute % 5))).replace(second=0, microsecond=0)).total_seconds()*1000
-                    last_episode = show_library[show_id]['files'][episode_id]
+                    last_episode = chosen_show['files'][episode_id]
                     last_episode_index = episode_keys.index(episode_id)
                     start_time = (end_time + datetime.timedelta(minutes=5-(end_time.minute % 5))).replace(second=0, microsecond=0)
                 else:
@@ -1936,8 +1999,8 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                     preempt = False
                 end_time = end_datetime.strftime('%H:%M:%S.%f') # Format end time
                 seconds_to_fill -= music_video_duration_seconds
-                remaining_time = (next_start_time - end_datetime).total_seconds()*1000
-
+                remaining_time_start = (next_start_time - end_datetime).total_seconds()*1000
+                remaining_time = remaining_time_start
                 scheduled_content = {
                     "title": f"{selected_music_video['title']}",
                     "start_time": start_time.strftime('%H:%M:%S.%f'),
@@ -1963,11 +2026,11 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                 # Add the scheduled content to daily_schedule
                 daily_schedule[start_time.strftime('%H:%M:%S.%f')] = scheduled_content
                 if remaining_time >= 60:
-                    if end_datetime.second != 0:
+                    if remaining_time_start - remaining_time >= 60*10:
                         start_time += datetime.timedelta(minutes=1)
                         start_time = start_time.replace(second=0,microsecond=0)
                     else:
-                        start_time = end_datetime
+                        start_time = end_datetime + datetime.timedelta(seconds=1)
                 else:
                     seconds_to_fill = 0
 
@@ -2307,15 +2370,43 @@ def get_similar_shows(show_id, show_library, schedule_template, start_time, next
     if show_id:
         # Get a list of shows that are similar and fit within the block restrictions
         base_show = show_library[show_id]
+
         show_genres = base_show['genre']
-        if isinstance(show_genres,str):
+        if not isinstance(show_genres,list):
             show_genres = [show_genres]
+
         show_studios = base_show['studio']
-        if isinstance(show_studios,str):
+        if not isinstance(show_studios,list):
             show_studios = [show_studios]
+
+        show_tags = base_show.get('tag',[])
+        if not isinstance(show_tags,list):
+            show_tags = [show_tags]
+
+        show_country = base_show.get('country',[])
+        if not isinstance(show_country,list):
+            show_country = [show_country]
+
+        show_actors = []
+        if isinstance(base_show.get('actor'),list):
+            for actor in base_show.get('actor',[]):
+                print(actor)
+                show_actors.append(actor.get('tvdbid'))
+        elif isinstance(base_show.get('actor'),dict):
+            show_actors.append(base_show.get('actor').get('tvdbid'))
+
+        show_duration = base_show['duration']
         show_year = base_show['year']
+        show_cert = base_show.get('certification','NR')
     else:
         show_genres = []
+        show_studios = []
+        show_year = ""
+        show_tags = []
+        show_country = []
+        show_actors = []
+        show_cert = ""
+        show_duration = 0
     
     allowed_genres = []
     forbidden_genres = []
@@ -2362,6 +2453,7 @@ def get_similar_shows(show_id, show_library, schedule_template, start_time, next
     filtered_genres_list = list(set(show_genres).intersection(allowed_genres))
     filtered_genres_list = [x for x in filtered_genres_list if x not in forbidden_genres]
     matching_shows = show_library
+    show_scores = {}
     if len(filtered_genres_list) > 0:
         matching_shows = from_filter(matching_shows, filtered_genres_list, 'genre')
     if len(forbidden_genres) > 0:
@@ -2375,10 +2467,73 @@ def get_similar_shows(show_id, show_library, schedule_template, start_time, next
     preferred_year_range = [int(show_year[:3]+'0'), int(show_year[:3]+'9')]
     
     similar_shows = {}
+    
     for s, show in matching_shows.items():
-        if preferred_year_range[0] <= int(show['year']) <= preferred_year_range[1]:
-            if s not in existing_series_ids:
-                similar_shows[s] = show
+        show_scores[s] = 0
+        year_diff = abs(int(show_year) - int(show['year'])) + 1
+        show_scores[s] += 1/year_diff
+        this_show_genres = show['genre']
+        this_show_duration = show['duration']
+        
+        if (this_show_duration-5 < base_show['duration'] < this_show_duration+5) and this_show_duration != 0:
+            if this_show_duration == base_show['duration']:
+                show_scores[s] += 1
+            elif this_show_duration < base_show['duration']:
+                show_scores[s] += this_show_duration/base_show['duration']
+            elif this_show_duration > base_show['duration']:
+                show_scores[s] += base_show['duration']/this_show_duration
+        elif base_show['duration'] < this_show_duration-5 or base_show['duration'] > this_show_duration+5:
+            show_scores[s] -= abs(this_show_duration - base_show['duration'])/10
+        
+        if isinstance(this_show_genres,str):
+            this_show_genres = [this_show_genres]
+        for g in this_show_genres:
+            if g in show_genres:
+                show_scores[s] += 1/(len(this_show_genres))
+
+        this_show_studios = show['studio']
+        if isinstance(this_show_studios,str):
+            this_show_studios = [this_show_studios]
+        elif this_show_studios is None:
+            this_show_studios = []
+        for g in this_show_studios:
+            if g in show_studios:
+                show_scores[s] += 1/(len(this_show_studios))
+
+        this_show_tags = show.get('tag',[])
+        if isinstance(this_show_tags,str):
+            this_show_tags = [this_show_tags]
+        for g in this_show_tags:
+            if g in show_tags:
+                show_scores[s] += 1/(len(this_show_tags))
+
+        this_show_country = show.get('country',[])
+        if isinstance(this_show_country,str):
+            this_show_country = [this_show_country]
+        for g in this_show_country:
+            if g in show_country:
+                show_scores[s] += 1/(len(this_show_country))
+                
+        this_show_actors = []
+        for a in show.get('actor',[]):
+            try:
+                this_show_actors.append(a.get('tmbdid'))
+            except AttributeError:
+                print(f"AttributeError: {a}")
+                pass
+        for g in this_show_actors:
+            if g in show_actors:
+                show_scores[s] += 1/(len(this_show_actors))
+
+        this_show_cert = show.get('certification', 'NR')
+        if this_show_cert == show_cert:
+            show_scores[s] += 1
+
+        #if preferred_year_range[0] <= int(show['year']) <= preferred_year_range[1]:
+
+        if s not in existing_series_ids:
+            similar_shows[s] = show
+                
     if len(similar_shows) < 1:
         for s, show in matching_shows.items():
             # Check all allowable decade ranges
@@ -2388,7 +2543,7 @@ def get_similar_shows(show_id, show_library, schedule_template, start_time, next
                     if year_range[0] <= int(show['year']) <= year_range[1]:
                         if s not in existing_series_ids:
                             similar_shows[s] = show
-    return similar_shows
+    return similar_shows, show_scores
 
 def get_same_rating_shows(show_id, show_library, schedule_template, start_time, next_start_time, start_date, existing_series_ids):
     allowed_genres = []
@@ -2525,6 +2680,10 @@ def get_random_shows(show_library, schedule_template, start_time, next_start_tim
                             random_shows[s] = show
         else:
             random_shows[s] = show
+    if len(random_shows) < 1:
+        random_shows = show_library
+        if len(forbidden_ratings) > 0 and forbidden_ratings[0] != '':
+                random_shows = from_ratings(random_shows, forbidden_ratings, include=False)
     return random_shows
 
 def determine_start_date(existing_daily_schedule):
@@ -2650,24 +2809,44 @@ def next_episode(show_id, last_episode, episode_keys, files):
     else:
         last_episode_season = int(last_episode.get('season_number',0))
         last_episode_number = int(last_episode.get('episode_number',0))
-
+    #print(json.dumps(last_episode,indent=4))
+    print(f"LAST EPISODE: S{last_episode_season}E{last_episode_number}")
+    
     # Use the last episode information to select the next episode
-    for episode_id, episode_info in files.items():
-        episode_season = int(episode_info['episode_details'][0].get('season'),0)
+    sorted_files = sorted(
+        files.items(),
+        key=lambda item: (
+            int(item[1]["episode_details"][0]["season"]),
+            int(item[1]["episode_details"][0]["episode"])
+        )
+    )
+    for episode_enumeration, (episode_id, episode_info) in enumerate(sorted_files):
+        episode_season = int(episode_info['episode_details'][0].get('season',0))
         episode_number = int(episode_info['episode_details'][0].get('episode',0))
+        #print(json.dumps(episode_info['episode_details'],indent=4))
+        #if episode_season == last_episode_season and episode_number == last_episode_number:
+        if episode_id == last_episode['episode_path']:
+            if episode_enumeration + 1 < len(sorted_files):
+                next_episode_id, next_episode_info = sorted_files[episode_enumeration + 1]
+                print(f"NEXT EPISODE: S{next_episode_info['episode_details'][0].get('season',0)}E{next_episode_info['episode_details'][0].get('episode',0)}")
+                return next_episode_id, next_episode_info
+            else:
+                first_episode_id = min(files.keys())
+                return first_episode_id, files[first_episode_id]  
+            
         
-        if episode_season == last_episode_season and episode_number == last_episode_number+1:
+        '''if episode_season == last_episode_season and episode_number == last_episode_number+1:
             return episode_id, episode_info
         if episode_season == last_episode_season+1 and episode_number == 1:
-            return episode_id, episode_info
+            return episode_id, episode_info'''
 
     # If no next episode found, select first        
-    for episode_id, episode_info in files.items():
+    '''for episode_id, episode_info in files.items():
         if episode_season == 1 and episode_number == 1:
             return episode_id, episode_info
         else:
             first_episode_id = min(files.keys())
-            return first_episode_id, files[first_episode_id]
+            return first_episode_id, files[first_episode_id]'''
 
 def random_episode(files):
     try:
@@ -3033,7 +3212,11 @@ def get_interstitials(date, time_range, daily_schedule, movie_library, show_libr
                         continue                                        
                     
                 # Check for similarities with scheduled content
-                similarity_score = calculate_similarity(date, video_info, time_range, daily_schedule, show_library, movie_library, weights, i_library_name.lower().strip())
+                try:
+                    similarity_score = calculate_similarity(date, video_info, time_range, daily_schedule, show_library, movie_library, weights, i_library_name.lower().strip())
+                except UnboundLocalError:
+                    print("Weights not found, using defaults")
+                    similarity_score = calculate_similarity(date, video_info, time_range, daily_schedule, show_library, movie_library, weights_defaults, i_library_name.lower().strip())
                 # Add the video to fitting_interstitials along with its similarity score
                 fitting_interstitials.append((video_id, similarity_score, i))
                 

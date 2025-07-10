@@ -9,8 +9,10 @@ import traceback
 import urllib.parse
 import uuid
 import xmltodict
+#from colorama import init, Fore, Style
 from datetime import datetime
 from difflib import SequenceMatcher
+#from fuzzywuzzy import fuzz
 from moviepy.editor import VideoFileClip
 from xml.etree import ElementTree as ET
 
@@ -192,7 +194,7 @@ def search_and_store_tv_shows(tv_show_folders, output_json_path):
 
     total_shows = len(show_directories)
     processed_files = 0
-
+    episode_durations = []
     def process_single_episode(episode_element, tv_shows, existing_data_dict, show_folder):
         try:
             file_info = episode_element.find(".//fileinfo")
@@ -247,6 +249,13 @@ def search_and_store_tv_shows(tv_show_folders, output_json_path):
             except KeyError:
                 show_entry['files'][episode_path] = episode_files_dict
             show_entry['files'][episode_path]['episode_details'].append(episode_data)
+            try:
+                ep_dur = round(int(episode_data['fileinfo']['streamdetails']['video']['durationinseconds'])/60)
+                if ep_dur > 1:
+                    episode_durations.append(ep_dur)
+            except Exception as e:
+                print(f"Error getting episode duration: {e}")
+                #pass
         except AttributeError as e:
             try:
                 print(f'No file for episode: {episode_element.find(".//showtitle").text} S{episode_element.find(".//season").text}E{episode_element.find(".//episode").text} - {episode_element.find(".//title").text}')
@@ -334,7 +343,8 @@ def search_and_store_tv_shows(tv_show_folders, output_json_path):
                                 f"Processed NFO files: {i + 1}/{len(nfo_files)} - {((i + 1) / len(nfo_files)) * 100:.2f}%",
                                 end='\r')'''
                     print()
-                    
+                    show_duration = max(set(episode_durations), key=episode_durations.count)
+                    show_entry['duration'] = show_duration
                     show_entry['files'] = reorder_files_dict(show_entry['files'])
                     
                     tv_shows[show_id] = show_entry

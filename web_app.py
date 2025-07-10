@@ -19,6 +19,7 @@ import unicodedata
 from datetime import timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, jsonify, send_file, send_from_directory, Response
 from flask_socketio import SocketIO, emit
+from pathlib import Path
 
 #import scheduler
 app = Flask(__name__)
@@ -1562,8 +1563,9 @@ def edit_entry(channel, day, time, entry=None):
             start_time = start_time+':00'
         entry['start_time'] = start_time
         entry_type = request.form.get('type')
-        print(entry_type)
+        print(f"ENTRY TYPE: [{entry_type}]")
         if entry_type == 'series':
+            print(entry_type)
             if request.form['title'] != 'random':
                 entry['type'] = {
                     'series': {
@@ -1624,7 +1626,7 @@ def edit_entry(channel, day, time, entry=None):
                         'on_series_end': request.form['on_series_end']
                     }
                 }
-        elif entry_type == 'random_movie':
+        elif entry_type == 'random_movie' or entry_type == 'movie':
             print(f"link_mode_select: {request.form['link_mode_select']}")
             if request.form['link_mode'] == 'disabled':
                 kevin_bacon_mode = 'false'
@@ -1676,7 +1678,7 @@ def edit_entry(channel, day, time, entry=None):
                 }
             print(f"kevin_bacon_mode: {entry['type']['random_movie']['kevin_bacon_mode']}")
 
-            if request.form['title'] != 'random':
+            '''if request.form['title'] != 'random':
                 entry['type'] = {
                     'series': {
                         'id': request.form['title'],
@@ -1735,7 +1737,7 @@ def edit_entry(channel, day, time, entry=None):
                             },
                         'on_series_end': request.form['on_series_end']
                     }
-                }
+                }'''        
         elif entry_type == 'music_videos':
             #print(json.dumps(request.form,indent=4))
             print(f"link_mode_select: {request.form['link_mode_select']}")
@@ -2230,7 +2232,10 @@ def live_load():
             elif category == "movie":
                 key = data['details'].get('key')
                 movie_data = movies_details.get(key)
-                actor_list = movie_data.get('actor', [])
+                try:
+                    actor_list = movie_data.get('actor', [])
+                except:
+                    actor_list = []
                 actor_names = []
                 if len(actor_list) > 0:
                     for actor in actor_list:
@@ -2256,9 +2261,28 @@ def live_load():
                 else:
                     certification = ''
                 #certification = "Rated: "+certification
-                raw_thumb_path = os.path.splitext(movie_data['files'][0].get('filepath'))[0]+'-landscape.jpg'
-                print(raw_thumb_path)
-                thumbnail_path = url_for('serve_movie',filename=raw_thumb_path.replace(config['Settings']['Library Mount Point'],'')) if os.path.exists(raw_thumb_path) else url_for('static', filename='beeprev2.png').strip()
+                raw_path = os.path.splitext(movie_data['files'][0].get('filepath'))[0]
+                print(raw_path)
+                if os.path.isfile(raw_path+'-landscape.jpg'):
+                    raw_thumb_path = raw_path+'-landscape.jpg'
+                elif os.path.isfile(raw_path+'-clearart.png'):
+                    raw_thumb_path = raw_path+'-clearart.png'
+                elif os.path.isfile(raw_path+'-banner.jpg'):
+                    raw_thumb_path = raw_path+'-banner.jpg'
+                elif os.path.isfile(raw_path+'-clearlogo.png'):
+                    raw_thumb_path = raw_path+'-clearlogo.png'
+                elif os.path.isfile(raw_path+'-discart.jpg'):
+                    raw_thumb_path = raw_path+'-discart.jpg'
+                elif os.path.isfile(raw_path+'-keyart.jpg'):
+                    raw_thumb_path = raw_path+'-keyart.jpg'
+                elif os.path.isfile(raw_path+'-poster.jpg'):
+                    raw_thumb_path = raw_path+'-poster.jpg'
+                elif os.path.isfile(raw_path+'-fanart.jpg'):
+                    raw_thumb_path = raw_path+'-fanart.jpg'
+                else:
+                    raw_thumb_path = None
+                    
+                thumbnail_path = url_for('serve_movie',filename=raw_thumb_path.replace(config['Settings']['Library Mount Point'],'')) if raw_thumb_path is not None else url_for('static', filename='beeprev2.png').strip()
                 print(thumbnail_path)
             elif category == "interstitial":
                 key = data['details'].get('key')
@@ -2306,7 +2330,7 @@ def live_load():
             'title-text': (data.get('title')),
             'details-text': details_text.replace("'",""),
             'time-date-text': cert,
-            'channel-number': f"{html.escape(channel_details.get('channel_call_letters'))}-{channel_details.get('number_int')}",
+            'channel-number': f"{html.escape(channel_details.get('channel_call_letters',''))}-{channel_details.get('number_int')}",
             'prevue-image': image_path
                 
         }
@@ -2813,7 +2837,7 @@ def show_schedule():
                     end_time_obj = start_time_obj + datetime.timedelta(seconds=schedule_entry['duration_s'])
                     rounded_minutes = round((end_time_obj-start_time_obj).total_seconds()/60)
                     
-                    # Add small tolerance (e.g., 1 minute) to handle close times
+                    # Add small tolerance to handle close times
                     overlap_start = max(start_time_obj, blocks[i]['start'])
                     overlap_end = min(blocks[i]['end'] + datetime.timedelta(minutes=1), block_end)  # Adding a 1-minute tolerance
                     if start_time == prev_start_time or (start_time_obj < blocks[i]['start'] and end_time_obj <= blocks[i]['start']):
@@ -2847,13 +2871,14 @@ def show_schedule():
                             else:
                                 duration_min_total = (end_time_obj - start_time_obj).seconds // 60
                                 
-
-                                if prev_end_time_obj <= blocks[i]['start']:
-                                    minutes_between = (start_time_obj - prev_end_time_obj).seconds // 60
-                                elif prev_end_time_obj >= blocks[i]['start']:
-                                    time_between = (start_time_obj - prev_end_time_obj).seconds 
-                                    minutes_between = time_between // 60
-
+                                try:
+                                    if prev_end_time_obj <= blocks[i]['start']:
+                                        minutes_between = (start_time_obj - prev_end_time_obj).seconds // 60
+                                    elif prev_end_time_obj >= blocks[i]['start']:
+                                        time_between = (start_time_obj - prev_end_time_obj).seconds 
+                                        minutes_between = time_between // 60
+                                except UnboundLocalError:
+                                    pass
                             '''if time_between > 0 and minutes_between > 10 and start_time != prev_start_time:
                                 # Add an empty block if no content and if there is space left
                                 empty_block_width = calculate_cell_width(minutes_between, cell_width, padding, border)
@@ -2907,7 +2932,35 @@ def show_schedule():
                                 details_text = cast_text
                                 try:
                                     movie_path, movie_filename = os.path.split(movies_details[movie_info['key']]['files'][0]['filepath'])
-                                    thumb_filename = os.path.splitext(movie_filename)[0]+'-landscape.jpg'
+                                    
+                                    raw_path = os.path.splitext(movie_filename)[0]
+                                    print(raw_path)
+                                    if Path(os.path.join(movie_path,raw_path+'-landscape.jpg')).is_file():
+                                        raw_thumb_path = raw_path+'-landscape.jpg'
+                                    elif Path(os.path.join(movie_path,raw_path+'-clearart.png')).is_file():
+                                        raw_thumb_path = raw_path+'-clearart.png'
+                                    elif Path(os.path.join(movie_path,raw_path+'-banner.jpg')).is_file():
+                                        raw_thumb_path = raw_path+'-banner.jpg'
+                                    elif Path(os.path.join(movie_path,raw_path+'-clearlogo.png')).is_file():
+                                        raw_thumb_path = raw_path+'-clearlogo.png'
+                                    elif Path(os.path.join(movie_path,raw_path+'-discart.jpg')).is_file():
+                                        raw_thumb_path = raw_path+'-discart.jpg'
+                                    elif Path(os.path.join(movie_path,raw_path+'-keyart.jpg')).is_file():
+                                        raw_thumb_path = raw_path+'-keyart.jpg'
+                                    elif Path(os.path.join(movie_path,raw_path+'-poster.jpg')).is_file():
+                                        raw_thumb_path = raw_path+'-poster.jpg'
+                                    elif Path(os.path.join(movie_path,raw_path+'-fanart.jpg')).is_file():
+                                        raw_thumb_path = raw_path+'-fanart.jpg'
+                                    else:
+                                        raw_thumb_path = None
+                                        
+                                    '''thumbnail_path = url_for('serve_movie',filename=raw_thumb_path.replace(config['Settings']['Library Mount Point'],'')) if raw_thumb_path is not None else url_for('static', filename='beeprev2.png').strip()
+                                    print(thumbnail_path)'''
+                                    
+                                    if raw_thumb_path is not None:
+                                        thumb_filename = raw_thumb_path
+                                    else:
+                                        thumb_filename = '/static/beeprev2.png'
                                     #shutil.copy(os.path.join(movie_path,thumb_filename),'live/')
                                     thumb_path = url_for('serve_movie',filename=os.path.join(movie_path,thumb_filename).lstrip('/')).replace(config['Settings']['Library Mount Point'],'')
 
@@ -2915,6 +2968,41 @@ def show_schedule():
                                     print(thumb_filename)
                                 except:
                                     thumb_path = '/static/beeprev2.png'
+                            elif 'music_video' in schedule_entry['type']:
+                                movie_info = schedule_entry['type']['music_video']
+                                if 'kevin_bacon_mode' in schedule_entry:
+                                    if schedule_entry['kevin_bacon_mode'] is not None:
+                                        if not isinstance(schedule_entry['kevin_bacon_mode'], list):
+                                            schedule_entry['kevin_bacon_mode'] = [schedule_entry['kevin_bacon_mode']]
+                                        for kbm in schedule_entry['kevin_bacon_mode']:
+                                            print(kbm)
+                                            if kbm is not None:
+                                                if kbm['degree'][0] is not None:
+                                                    kbm_degree = ', '.join(kbm['degree'])
+                                                    if kbm['setting'] == 'certification':
+                                                        kbm['setting'] = 'rating'
+                                                        kbm_degree = ''
+                                                        for kbmd in kbm['degree']:
+                                                            kbm_degree += kbmd.split('/')[0].split(':')[-1].strip()+' '
+                                                elif kbm['setting'] == 'credits':
+                                                    kbm['setting'] = 'writer'
+                                                cell_color = 'red'
+                                                try:
+                                                    kbm_text = f"Linked from {kbm['title']} through the {kbm['setting']} {kbm_degree.strip()}."
+                                                except UnboundLocalError:
+                                                    kbm_text = ''
+                                                    cell_color = 'blue'
+                                            else:
+                                                cell_color = 'blue'
+                                            
+                                    else:
+                                        cell_color = 'blue'
+                                cell_text_info = remove_accents(f"{schedule_title.upper()}")
+                                remove_accents(f"{schedule_title.upper()}")
+                                title_text = remove_accents(f"{schedule_title.upper()}")
+                                details_text = ''
+                                thumb_filename = '/static/beeprev2.png'
+                                thumb_path = '/static/beeprev2.png'
                                 
                             elif 'series' in schedule_entry['type']:
                                 series_info = schedule_entry['type']['series']
