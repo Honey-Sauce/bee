@@ -2,15 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>{% block title %}Broadcast Emulation Engine{% endblock %}</title>
-    <link href="{{ url_for('static', filename='excalibur.css') }}" rel="stylesheet" type="text/css" media="all">
+
+	<link href="{{ url_for('static', filename='excalibur.css') }}" rel="stylesheet" type="text/css" media="all">
 	<link rel="icon" href="{{ url_for('static', filename='beeico.png') }}" type="image/png">
 </head>
 <body>
     <script>
         function updateCurrentTime() {
-            var currentTimeElement = document.getElementById('current-time');
+            //var currentTimeElement = document.getElementById('current-time');
+			var currentTimeClass = document.querySelectorAll('.current-time');
             var now = new Date();
 
             var hours = now.getHours().toString().padStart(2, '0');
@@ -19,15 +21,20 @@
 
             var currentTimeString = hours + ':' + minutes + ':' + seconds;
 
-            currentTimeElement.textContent = currentTimeString;
+            //currentTimeElement.textContent = currentTimeString;
+			currentTimeClass.forEach(function(element) {
+				element.textContent = currentTimeString;
+			});
         }
 
         // Update every second
         setInterval(updateCurrentTime, 1000);
 
         // Initial update
-        updateCurrentTime();
-		
+		document.addEventListener('DOMContentLoaded', function () {
+			updateCurrentTime();
+		});
+
 		function prevueText(channel_title, title_text, details_text, timedate_text, channel_number, thumb_path) {
 			prevueUnHide();
 			document.getElementById('channel-title').innerText = channel_title;
@@ -198,13 +205,17 @@
 
 
     </script>
+    <div class="noverflow zoomin" style="background: rgb(0, 0, 51);top:0">
 	{% if kiosk_mode is defined and kiosk_mode != False %}<div class="noverflow"><table>{% else %}
-    <div class="page" style="width:100%;min-width:907px;">
-        <h1 onclick="window.location.href=window.location.pathname;" style="font-family: Prevue-C;">Broadcast Emulation Engine</h1>
-    </div>
-	<div class="noverflow">
-		<table>
-		<tr>
+        <table style="background: rgb(0, 0, 51);">
+		<tr style="z-index:10;">
+			<td class="box blue tall yellow totalspan" style="text-align:left;"><span class="largefont" onclick="window.location.href=window.location.pathname;" style="font-family: Prevue-C;position:sticky;background: rgb(0, 0, 51);">🐝 Broadcast Emulation Engine 🐝</span>
+			</br>
+			<span class="extrasmallfont">Television with your own media library. Create, manage, schedule and automate shows, movies, music videos and more.</span>
+			</td>
+			
+		</tr>
+		<tr style="z-index:10">
 			<td class="box blue firstcolumn"><a href="{{ url_for('index') }}" class="yellow">ABOUT</a></td>
 			<td class="box blue">
 				<a href="{{ url_for('show_schedule') }}" class="yellow"><span>SCHEDULE</span></a>
@@ -215,13 +226,14 @@
 			<td class="box blue"><a class="yellow" href="{{ url_for('clients') }}">DRONES</a></td>
 			<td class="box blue"><a class="yellow" href="{{ url_for('fresh_honey') }}">FRESH HONEY</a></td>
 			
-			<td class="box yellow blue"><a href="{{ url_for('settings') }}"class="yellow">SETTINGS</a></td>
+			<td class="box yellow blue{% if drones is defined and drones|length < 1 %} cyan{% endif %}"><a href="{{ url_for('settings') }}"class="yellow">SETTINGS</a></td>
 			<td class="box yellow blue"></td>
 			<td class="box yellow blue"></td>
 			<td class="box yellow blue"></td>
 		</tr>
-	<div>
+	</div>
 	{% endif %}
+	<div>
 		<!-- Add this where you want to display flash messages -->
 		{% with messages = get_flashed_messages() %}
 		  {% if messages %}
@@ -243,7 +255,7 @@
 		</table>
     <!-- Define the table structure -->
     <table class='grid' id="schedule-table">
-	<tr class="tophalf hide" id="prevue-row">
+	<tr class="tophalf hide" id="prevue-row" style="z-index:10">
 	<td class="boxtop" id="prevue-left" onclick="prevueHide()"><br>
 	{% if live_onload %}
 	{% for client, live in live_onload.items() %}
@@ -289,7 +301,7 @@
 	{% set now_playing  = kiosk_mode %}
 	{% endif %}
 	{% if now_playing == client or now_playing == 'all' %}
-	<tr class="top-row">
+	<tr class="top-row" style="z-index:10">
 	<td class="box yellow firstcolumn" id="channel-number-cell" onclick="prevueUnHide()" oncontextmenu="stopBeehive('{{ live_onload[client]['channel-title'] }}');return false;">{{ live_onload[client]['channel-number'] }}</td>
 	<td id="title-text-cell" class="box yellow trispan" onclick="prevueUnHide()"  oncontextmenu="stopBeehive('{{ live_onload[client]['channel-title'] }}');return false;">{{ live_onload[client]['title-text'] }}</td>
 	<td id="channel-title-cell" class="box yellow doublespan" title="Click to stop" onclick="prevueUnHide()" oncontextmenu="stopBeehive('{{ live_onload[client]['channel-title'] }}');return false;">Playing on {{ live_onload[client]['channel-title'] }}</td>
@@ -298,7 +310,7 @@
 	{% endif %}
 	{% endfor %}
 	{% else %}
-	<tr class="top-row" onclick="prevueUnHide()">
+	<tr class="top-row" onclick="prevueUnHide()" style="z-index:10">
 	<td class="box yellow firstcolumn" id="channel-number-cell"></td>
 	<td id="title-text-cell" class="box yellow trispan">NOT PLAYING</td>
 	<td id="time-date-text-cell" class="box yellow doublespan">Right click channel to start</td>

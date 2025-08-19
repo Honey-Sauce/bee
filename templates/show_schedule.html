@@ -1,10 +1,44 @@
 {% extends 'layout.html' %}
 {% block content %}
 
-        <!-- Loop through each channel -->
-		{{html_string|safe}}
-
-    </table>
+		<table style="position: fixed; top: 0; left: 0; right: 0; z-index: 2;" id="time-top">
+			<tr><td class="box firstcolumn current-time" style="text-align: end;"></td>
+				{% for time_block in schedule_data.time[:8] %}
+					{{time_block.html|safe}}
+				{% endfor %}
+			</tr>
+		</table>
+		<!-- Loop through each channel -->
+		<table id="full-schedule" style="top:20;">
+			<tr style="z-index:10">
+				<td class="box firstcolumn current-time" style="text-align: end;"></td>
+					{% for time_block in schedule_data.time[:8] %}
+						{{time_block.html|safe}}
+					{% endfor %}
+			</tr>
+			<tr style="z-index:0">
+				{% for ch_num, ch_data in schedule_data.items() %}
+					{% for html_data in ch_data.html %}
+						{{html_data|safe}}
+					{% endfor %}
+			</tr>
+				{% endfor %}
+			<tr style="z-index:0">
+				<td class="box firstcolumn current-time" style="text-align: end;"></td>
+				{% for time_block in schedule_data.time[:8] %}
+					{{time_block.html|safe}}
+				{% endfor %}
+			</tr>		
+		</table>
+		<table style="position: fixed; left: 0; bottom: 0; right:0; z-index: 10;" id="time-bottom">
+			<tr>
+				<td class="box firstcolumn current-time" style="text-align: end;"></td>
+				{% for time_block in schedule_data.time[:8] %}
+					{{time_block.html|safe}}
+				{% endfor %}
+			</tr>
+		</table>
+    
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 	<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 	<script>setInterval(location.reload, 300000);</script>
@@ -52,6 +86,37 @@
 				}
 			};
 		});
+		
+		const header = document.getElementById('time-top');
+
+		function updateHeaderPosition() {
+		  const vv = window.visualViewport;
+		  header.style.top = `${vv.offsetTop}px`;
+		  header.style.left = `-${window.scrollX}px`;  // <-- allow horizontal scrolling
+		  header.style.width = `${vv.width + window.scrollX}px`; // Adjust width accordingly
+		}
+
+		window.visualViewport.addEventListener('scroll', updateHeaderPosition);
+		window.visualViewport.addEventListener('resize', updateHeaderPosition);
+		updateHeaderPosition();
+
+		const footer = document.getElementById('time-bottom');
+
+		function updateFooterPosition() {
+		  const vv = window.visualViewport;
+		  footer.style.bottom = `${vv.offsetBottom}px`;
+		  footer.style.left = `-${window.scrollX}px`;  // <-- allow horizontal scrolling
+		  footer.style.width = `${vv.width + window.scrollX}px`; // Adjust width accordingly
+		  // Adjust horizontal positioning for zoom/scroll
+		  //footer.style.left = `-${window.scrollX}px`;
+		  //footer.style.width = `${vv.width + window.scrollX}px`;
+		}
+
+		window.visualViewport.addEventListener('scroll', updateFooterPosition);
+		window.visualViewport.addEventListener('resize', updateFooterPosition);
+		window.addEventListener('scroll', updateFooterPosition);
+
+		updateFooterPosition();
 
         // Function to format time as HH:MM
         function formatTime(date) {
@@ -63,25 +128,54 @@
             return hours + ':' + minutes;
         }
 
-        // Update the current time cell and advance time cells
-        function updateScheduleTime() {
-            var currentTime = getCurrentTime();
-            document.getElementById("now-time").innerText = formatTime(currentTime);
-            for (var i = 1; i <= 5; i++) {
-                var nextTime = new Date(currentTime);
-                nextTime.setMinutes(nextTime.getMinutes() + 30 * i);
-                document.getElementById("time-" + i).innerText = formatTime(nextTime);
-            }
-        }
+		(function () {
+			const LAST_REFRESH_KEY = 'lastPageRefreshTime';
 
+			function getNow() {
+				return new Date();
+			}
 
+			function getMinutesUntilNextHalfHour() {
+				const now = getNow();
+				const minutes = now.getMinutes();
+				const seconds = now.getSeconds();
+				const ms = now.getMilliseconds();
 
-        // Call updateScheduleTime function when the page loads
-        window.onload = function() {
-            updateScheduleTime();
-            setInterval(updateScheduleTime, 30000); // Update every 30 seconds
-        };
-		
+				let minutesUntilNext = (minutes < 30) ? 30 - minutes : 60 - minutes;
+				const msUntilNextHalfHour = (minutesUntilNext * 60 * 1000) - (seconds * 1000) - ms;
+
+				const nextAt = new Date(now.getTime() + msUntilNextHalfHour);
+				console.log(`Next refresh: ${nextAt.toLocaleTimeString()}`);
+				console.log(`Time to refresh: ${Math.floor(msUntilNextHalfHour / 60000)} minutes and ${(msUntilNextHalfHour % 60000) / 1000} seconds`);
+
+				return msUntilNextHalfHour;
+			}
+
+			function shouldRefreshBasedOnElapsedTime() {
+				const lastRefresh = localStorage.getItem(LAST_REFRESH_KEY);
+				if (!lastRefresh) return true;
+
+				const now = getNow();
+				const last = new Date(parseInt(lastRefresh));
+				const diffMinutes = (now - last) / (1000 * 60);
+				return diffMinutes > 30;
+			}
+
+			function refreshPage() {
+				console.log('Refreshing page...');
+				localStorage.setItem(LAST_REFRESH_KEY, getNow().getTime());
+				location.reload(true);
+			}
+
+			if (shouldRefreshBasedOnElapsedTime()) {
+				console.log('More than 30 minutes since last refresh — refreshing now.');
+				refreshPage();
+			} else {
+				const delay = getMinutesUntilNextHalfHour();
+				console.log(`Setting timeout for ${delay / 1000} seconds`);
+				setTimeout(refreshPage, delay);
+			}
+		})();
     </script>
 	
 {% endblock %}

@@ -6,7 +6,7 @@
 <form action="{{ url_for('edit_entry', channel=channel, day=day, dow=dow, time=entry.start_time, entry_id=entry.id) }}" method="post">
     <table id="title_content" class="grid">
         <tr class>
-            <td class="box yellow firstcolumn" id="current-time" style="text-align:right;"></td>
+            <td class="box yellow firstcolumn current-time" style="text-align:right;"></td>
             <td class="box yellow fullspan">Edit Schedule Entry</td>
         </tr>
 	</table>

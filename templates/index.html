@@ -2,8 +2,8 @@
 
 {% block content %}
 	<table><tr>
-	<td class="box yellow firstcolumn" id='current-time'></td>
-	<td class="box yellow fullspan">BEE v.0.1.0</td>
+	<td class="box yellow firstcolumn current-time"></td>
+	<td class="box yellow fullspan">BEE v.0.2.1</td>
 	<td class="box"></td>
 	<td class="box"></td>
 	<td class="box"></td>
@@ -15,6 +15,15 @@
 	<td class="box blue tall"></td>
 	<td class="box blue tall"></td>
 	</tr>
+{% if drones|length < 1 %}
+<tr>
+	<td class="box blue firstcolumn tall cyan" style="font-size:50px">🔍</td>
+	<td class="box blue fullspan tall cyan" style="text-align:left">New to BEE? Start with SETTINGS and work your way left in the navigation bar. Start by defining file paths, configuring options, adding Drones and creating channels from templates. </td>
+	<td class="box blue tall"></td>
+	<td class="box blue tall"></td>
+	<td class="box blue tall"></td>
+</tr>
+{% endif %}	
 {% if drones|length > 0 %}
 <tr>
 	<td class="box yellow firstcolumn"></td>
@@ -25,7 +34,7 @@
 </tr>
 <tr>
 	<td class="box blue firstcolumn tall" style="font-size:50px">📺</td>
-	<td class="box blue fullspan tall" style="text-align:left">Select a Drone below to open the schedule grid in kiosk mode, limiting access to BEE options and settings to playback operations on a single client.</td>
+	<td class="box blue fullspan tall" style="text-align:left">Select a Drone below to open the schedule grid in kiosk mode, limiting access to BEE options and settings to playback operations on a single client. This can be used on kiosk mode devices, like wall tablets for home automation.</td>
 	<td class="box blue tall"></td>
 	<td class="box blue tall"></td>
 	<td class="box blue tall"></td>
