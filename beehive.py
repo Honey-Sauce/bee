@@ -447,10 +447,11 @@ def stream_video(url, file_info, start_time, process_ref):
 
 def main():
     print("Starting beehive.py...", flush=True)
+    print(f"Channel {sys.argv[1]}", flush=True)
+    print(f"Drone: {sys.argv[2]}", flush=True)
     if len(sys.argv) < 3:
         print("Usage: python script.py <channel> <client>", flush=True)
         sys.exit(1)
-
     channel_dir = os.path.join('channels',f"{int(sys.argv[1]):03}")
     schedule_file = os.path.join(channel_dir, 'active_schedule.json')
     current_item = None
@@ -490,7 +491,7 @@ def main():
 
             content_path = replace_prefix(content_path, server_prefix, client_prefix)
 
-            time_diff = (datetime_now - start_time_dt).total_seconds()
+            time_diff = (get_time() - start_time_dt).total_seconds()
             offset = max(0, time_diff)
             preempt_seconds = current_item.get('is_preempted',0)
             try:
@@ -499,13 +500,21 @@ def main():
                 pass
             '''if isinstance(preempt_seconds, (int,float)):
                 offset += preempt_seconds'''
-            duration = (end_time_dt - datetime_now).total_seconds()  # Adjust duration based on the current time
+            duration = (end_time_dt - get_time()).total_seconds()  # Adjust duration based on the current time
             file_info = {
                 'path': normalize_path(content_path),
                 'start_offset': offset,
                 'duration': duration,  # Use the corrected duration
                 'current_item': current_item
             }
+
+            print(f"Start time: {start_time_dt}, End time: {end_time_dt}, \nOffset: {offset}s, Duration: {duration}s", flush=True)
+
+            # Calculate the actual start time, considering the preload time
+            actual_start_time = start_time_dt - timedelta(seconds=preload_seconds)
+            #print(f"Actual start time: {actual_start_time}")
+
+            process = stream_video(url, file_info, actual_start_time, process_ref)
 
             # SAVE NOW PLAYING DATA TO FILE
             live_json = read_live_file()
@@ -537,18 +546,9 @@ def main():
             save_data(live_file,live_json)
             # FINISH SAVING DATA TO FILE
             
-            print(f"Start time: {start_time_dt}, End time: {end_time_dt}, \nOffset: {offset}s, Duration: {duration}s", flush=True)
 
-            # Calculate the actual start time, considering the preload time
-            actual_start_time = start_time_dt - timedelta(seconds=preload_seconds)
-            #print(f"Actual start time: {actual_start_time}")
 
-            '''thread = threading.Thread(target=stream_video, args=(rtsp_url, file_info, actual_start_time, process_ref))
-            thread.start()'''
-
-            process = stream_video(url, file_info, actual_start_time, process_ref)
-
-            time.sleep(0.5)
+            time.sleep(0.25)
             
             # Wait until the next video should start before proceeding to the next item
             time_to_next_start = (end_time_dt - get_time()).total_seconds()

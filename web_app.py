@@ -1896,6 +1896,12 @@ def edit_get(channel):
 
     return render_template('edit_schedule.html', channel=channel, schedule=schedule, shows_details=shows_details, movies_details=movies_details, template_files=get_template_files(), live_onload=live_load())
 
+@app.route('/on_demand', methods=['GET', 'POST'])
+def on_demand(content="all"):
+    music_videos_details = load_data(os.path.join(LIBRARY_DIR, 'music_videos_details.json'))
+
+    return render_template('on_demand.html', music_videos_details=music_videos_details, shows_details=shows_details, movies_details=movies_details, template_files=get_template_files(), live_onload=live_load())
+
 '''@app.route('/edit_schedule/<channel>', methods=['GET', 'POST'])
 def edit_schedule_channel(channel):
     
@@ -2084,7 +2090,7 @@ def http_start_beehive():
     print(request.get_data(as_text=True))
     data = {'script':'beehive.py','arguments':request.get_data(as_text=True)}
     start_beehive(data)
-    return "Starting beehive.py"
+    return f"Starting beehive.py {request.get_data}"
 
 def start_beehive(data):
     script = data['script']
@@ -2115,13 +2121,14 @@ def start_beehive(data):
     if not live_data:
         live_data = {}
     print(live_data)
-    live_data[client_name] = {
-        'pid': process.pid,
-        'channel': args[0],
-        'title': "",  # Placeholder for title (to be updated by another function)
-        'category': ""  # Placeholder for category (to be updated by another function)
-    }
-    save_data(live_file, live_data)
+    if client_name != '' and client_name is not None:
+        live_data[client_name] = {
+            'pid': process.pid,
+            'channel': args[0],
+            'title': "",  # Placeholder for title (to be updated by another function)
+            'category': ""  # Placeholder for category (to be updated by another function)
+        }
+        save_data(live_file, live_data)
 
     # Start a background thread to handle log output processing
     '''thread = threading.Thread(target=process_output, args=(process,))
@@ -2300,7 +2307,7 @@ def live_load():
                 for interstitial_key, interstitial_json in config['Interstitials'].items():
                     interstitials_configs.append(interstitial_json)
                 interstitials_details = load_data(interstitials_configs[data['details'].get('library',0)])
-                interstitial_data = interstitials_details.get(key)
+                interstitial_data = interstitials_details.get(key,{})
                 details_text = interstitial_data['movie'].get('plot','')
                 if len(details_text) > 250:
                     details_text = details_text[:250]+'...'
@@ -2757,6 +2764,7 @@ def serve_show(filename):
 @app.route('/show_schedule', methods=['GET'])
 def show_schedule():
     channels = []
+    schedule_data = {}
     kiosk_mode = False
     now = datetime.datetime.now()
     if request.method == 'GET':
@@ -2768,10 +2776,13 @@ def show_schedule():
         kiosk_get = f'?kiosk={kiosk_mode}'
     else:
         kiosk_get = ''
-    html_string = f'<tr><td class="box firstcolumn" style="text-align: end;" id="current-time" onclick="window.location.href=window.location.pathname + \'{kiosk_get}\';"></td>'
-
+    
+    html_cell = f'<td class="box firstcolumn current-time" style="text-align: end; position: sticky; top: 0; z-index:1;" id="current-time" onclick="window.location.href=window.location.pathname + \'{kiosk_get}\';"></td>'
+    time_row = html_cell
+    empty_row = f'<tr><td class="box firstcolumn current-time" style="text-align: end;"></td>'
     # Add the next 12 half-hour blocks
     blocks = []
+    
     for b in range(12):
         if b == 0:
             offset = -60
@@ -2786,12 +2797,14 @@ def show_schedule():
             offset_get = f'?offset={offset}'
         else:
             offset_get = f'&offset={offset}'
-        html_string += f'<td class="box yellow" onclick="window.location.href=window.location.pathname + \'{kiosk_get}{offset_get}\';">{next_block_string}</td>'
-
-        blocks.append({'start':next_block,'end':next_block+ datetime.timedelta(minutes=30)})
+        html_cell = f'<td class="box yellow" onclick="window.location.href=window.location.pathname + \'{kiosk_get}{offset_get}\';">{next_block_string}</td>'
+        time_row += html_cell
+        empty_row+=f'<td class="box yellow" onclick="window.location.href=window.location.pathname + \'{kiosk_get}{offset_get}\';">{next_block_string}</td>'
+        blocks.append({'start':next_block,'end':next_block+ datetime.timedelta(minutes=30),'html':html_cell})
     print(blocks)
-    html_string += '</tr>'
-    time_row = html_string
+    time_row += '</th>'
+    #time_row = html_string
+    schedule_data['time'] = blocks
     today = now.strftime('%Y-%m-%d')
     
     # Populate channels list
@@ -2806,6 +2819,8 @@ def show_schedule():
     default_cell_width = 140  # Default width for a 30-minute block
     max_width = 1920
     cell_width = default_cell_width
+    cell_color = "blue"
+    channel_data = {}
     for channel_number, file_path, details_path in channels:
         app.logger.debug(f"Channel {channel_number} File Path: {file_path}")
 
@@ -2816,22 +2831,27 @@ def show_schedule():
             details = {}
 
         ch_num = int(channel_number.split(' ')[0])
-        html_string += f"<tr><td title='{details.get('channel_name','')}&#10;Click to view channel schedule&#10;Right click to start channel' id='ch_num' data-page='schedule/{channel_number.split(' ')[0]}' oncontextmenu= 'clientSelect({ch_num}); return false;' data-dialog='{ch_num}' class='clickable box blue yellow tall firstcolumn'>{details.get('icon','')}</br>{ch_num}</br>{details.get('channel_call_letters','')}</td>"
+        
+        channel_data[ch_num] = {'channel':f"<td title='{details.get('channel_name','')}&#10;Click to view channel schedule&#10;Right click to start channel' id='ch_num' data-page='schedule/{channel_number.split(' ')[0]}' oncontextmenu= 'clientSelect({ch_num}); return false;' data-dialog='{ch_num}' class='clickable box blue yellow tall firstcolumn channel'>{details.get('icon','')}</br>{ch_num}</br>{details.get('channel_call_letters','')}</td>"}
+        schedule_data[ch_num] = {'html':[f"<td title='{details.get('channel_name','')}&#10;Click to view channel schedule&#10;Right click to start channel' id='ch_num' data-page='schedule/{channel_number.split(' ')[0]}' oncontextmenu= 'clientSelect({ch_num}); return false;' data-dialog='{ch_num}' class='clickable box blue yellow tall firstcolumn channel'>{details.get('icon','')}</br>{ch_num}</br>{details.get('channel_call_letters','')}</td>"]}
+        html_string = f"<tr>{channel_data[ch_num]['channel']}"
 
         try:
             data = load_data(file_path)
         except FileNotFoundError:
             app.logger.error(f"File not found: {file_path}")
             continue
-
+        
         if data:
             daily_schedule = data
-            block_start = blocks[0]['start']
+            
             total_width_used = 0
             cells_created = 0
             block_filled = False
-
+            prev_start_time = (blocks[0]['start'] - datetime.timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S.%f")
             for i in range(12):
+                block_start = blocks[i]['start']
+                print(i)
                 '''if total_width_used > max_width/12*11:
                     break'''
                 '''if not block_filled and total_width_used < max_width and i != 0:
@@ -2846,32 +2866,40 @@ def show_schedule():
 
                         html_string += block_html'''
                 block_filled = False
-                block_end = block_start + datetime.timedelta(minutes=30)
+                block_end = blocks[i]['end']
                 block_html = ""
+                block_dict = {}
                 if i > 0:
                     after_start_time = False
                 else:
                     after_start_time = True
-                    prev_start_time = False
-                for start_time, schedule_entry in daily_schedule.items():
-
+                    
+                schedule_items = list(daily_schedule.items())
+                #for j, start_time, schedule_entry in enumerate(daily_schedule.items()):
+                for j in range(len(schedule_items)-1):
+                    start_time, schedule_entry = schedule_items[j]
+                    #print(start_time)
                     start_time_obj = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S.%f")
                     end_time_obj = start_time_obj + datetime.timedelta(seconds=schedule_entry['duration_s'])
                     rounded_minutes = round((end_time_obj-start_time_obj).total_seconds()/60)
                     
+                    prev_start_time_obj = datetime.datetime.strptime(prev_start_time, "%Y-%m-%d %H:%M:%S.%f")
+                    
                     # Add small tolerance to handle close times
                     overlap_start = max(start_time_obj, blocks[i]['start'])
                     overlap_end = min(blocks[i]['end'] + datetime.timedelta(minutes=1), block_end)  # Adding a 1-minute tolerance
-                    if start_time == prev_start_time or (start_time_obj < blocks[i]['start'] and end_time_obj <= blocks[i]['start']):
+                    if (start_time == prev_start_time and i != 1) or (start_time_obj < blocks[i]['start'] and end_time_obj <= blocks[i]['start']):
                         after_start_time = True
                         continue
                     elif after_start_time is True:
 
                         # Check if the entry overlaps with the current block
-                        if start_time_obj < block_end and end_time_obj > block_start:
-                            if total_width_used >= (cell_width-padding-border)*(i+1):
-                                continue
-                            elif (cell_width-padding-border)*(i) < total_width_used < (cell_width-padding-border)*(i+1):
+                        if prev_start_time_obj < start_time_obj < block_end and (i == 0 and end_time_obj > block_start + datetime.timedelta(minutes=10)) or (i != 0 and end_time_obj >= block_start):
+                            
+                            
+                            '''if total_width_used >= (cell_width-padding-border)*(i+1):
+                                continue'''
+                            if (cell_width-padding-border)*(i) < total_width_used < (cell_width-padding-border)*(i+1):
                                 cell_width = default_cell_width
                             else:
                                 cell_width = default_cell_width
@@ -2884,31 +2912,36 @@ def show_schedule():
                                 if minutes_remaining < duration_min_actual:
                                     duration_min_total = minutes_remaining
                                 else:
-                                    duration_min_total = (end_time_obj - start_time_obj).seconds // 60
-                                if start_time_obj > blocks[i]['start']:
+                                    duration_min_total = duration_min_actual
+                                if start_time_obj >= blocks[i]['start']:
                                     time_between = (start_time_obj - blocks[i]['start']).seconds 
                                 else:
                                     time_between = 0 
                                 minutes_between = time_between // 60
                             else:
-                                duration_min_total = (end_time_obj - start_time_obj).seconds // 60
+                                if start_time_obj < blocks[0]['start']:
+                                    duration_min_total = (end_time_obj - blocks[0]['start']).seconds // 60
+                                else:
+                                    duration_min_total = (end_time_obj - start_time_obj).seconds // 60
                                 
                                 try:
                                     if prev_end_time_obj <= blocks[i]['start']:
                                         minutes_between = (start_time_obj - prev_end_time_obj).seconds // 60
-                                    elif prev_end_time_obj >= blocks[i]['start']:
+                                    elif prev_end_time_obj > blocks[i]['start']:
                                         time_between = (start_time_obj - prev_end_time_obj).seconds 
                                         minutes_between = time_between // 60
                                 except UnboundLocalError:
                                     pass
-                            '''if time_between > 0 and minutes_between > 10 and start_time != prev_start_time:
+                            '''if time_between > 0 and minutes_between >= 10 and start_time != prev_start_time:
                                 # Add an empty block if no content and if there is space left
                                 empty_block_width = calculate_cell_width(minutes_between, cell_width, padding, border)
-                                empty_block = f"<td class='box blue tall' style='width:{min(empty_block_width,max_width-total_width_used)}px' title='{(start_time_obj - prev_end_time_obj).seconds // 60}/{minutes_between}'>{start_time_obj} - {prev_end_time_obj}</td>"
+                                empty_block = f"<td class='box {cell_color} tall' style='width:{min(empty_block_width,max_width-total_width_used)}px' title='{(start_time_obj - prev_end_time_obj).seconds // 60}/{minutes_between}'>{minutes_between}</td>"
                                 total_width_used += min(empty_block_width,max_width-total_width_used)
 
-                                html_string += empty_block'''
-                                    
+                                html_string += empty_block
+                            else:
+                                empty_block = '' 
+                            block_html += empty_block'''
                             entry_width = calculate_cell_width(duration_min_total, cell_width, padding, border)
                             kbm_text = None
                             total_width = entry_width #min(entry_width, max_width - total_width_used)  # Ensure row width doesn't exceed max_width
@@ -2976,9 +3009,6 @@ def show_schedule():
                                     else:
                                         raw_thumb_path = None
                                         
-                                    '''thumbnail_path = url_for('serve_movie',filename=raw_thumb_path.replace(config['Settings']['Library Mount Point'],'')) if raw_thumb_path is not None else url_for('static', filename='beeprev2.png').strip()
-                                    print(thumbnail_path)'''
-                                    
                                     if raw_thumb_path is not None:
                                         thumb_filename = raw_thumb_path
                                     else:
@@ -3040,6 +3070,8 @@ def show_schedule():
                                     thumb_path = '/static/beeprev2.png'
                                 if series_info['episode_mode'] == "random":
                                     cell_color = "grey"
+                                elif series_info.get('season_number') == "1" and series_info.get('episode_number') == "1":
+                                    cell_color = "cyan"
 
                             try:
                                 if '\n' in schedule_entry['summary']:
@@ -3091,10 +3123,73 @@ def show_schedule():
                             title_text = title_text.replace("'","\\'").replace('"', '\\"')
                             thumb_path = thumb_path.replace("'","\\'").replace('"', '\\"')
                             prevue_args = f"'{html.escape(channel_title)}', '{html.escape(title_text)}', '{html.escape(details_text)}', '{html.escape(timedate_text)}', '{html.escape(channel_number_text)}', '{html.escape(thumb_path)}'"
+                            # Show start time in cell if it isn't on the half-hour
+                            if start_time_obj != block_start:
+                                cell_text += f" ({start_time_obj.strftime('%H:%M')})"
                             
                             # Add the cell to the row
-                            block_html += f'<td oncontextmenu= "clientSelect({ch_num});return false" class="box tall {cell_color}" style="width:{total_width}px;text-align:left" title="{start_time_obj.strftime("%H:%M")}-{end_time_obj.strftime("%H:%M")}&#10;{html.escape(title_text)}&#10;{html.escape(details_text)}" onclick="prevueText({prevue_args})">{cell_text}</td>'
+                            cell_html = f'<td oncontextmenu= "clientSelect({ch_num});return false" class="box tall {cell_color}" style="width:{total_width}px;text-align:left" title="{start_time_obj.strftime("%H:%M")}-{end_time_obj.strftime("%H:%M")}&#10;{html.escape(title_text)}&#10;{html.escape(details_text)}" onclick="prevueText({prevue_args})">{cell_text}</td>'
+
+                            # Check to make sure entry hasn't already been saved
+                            skip_continue = False
+                            for h, html_data in enumerate(schedule_data[ch_num]['html']):
+                                if start_time_obj.strftime("%H:%M") in html_data and end_time_obj.strftime("%H:%M") in html_data and title_text in html_data:
+                                    #print(h, html_data)
+                                    skip_continue = True
+                                    break
+                            if skip_continue is True:
+                                continue
+                            # Check if first start time is more than 30 minutes from the start of the first time block
+                            if i == 1 and prev_end_time_obj <= blocks[0]['start']:
+                                block_html = f"<td class='box blue dim tall'</td>"
+                                schedule_data[ch_num]['html'].append(f"<td class='box blue dim tall'></td>")
+     
+                            schedule_data[ch_num]['html'].append(cell_html)
+                            schedule_data[ch_num].update({
+                                'cell_color': cell_color,
+                                'total_width': total_width,
+                                'start_time': start_time_obj.strftime("%H:%M"),
+                                'end_time': end_time_obj.strftime("%H:%M"),
+                                'title': html.escape(title_text),
+                                'details_text': html.escape(details_text),
+                                'prevue_args': prevue_args,
+                                'cell_text': cell_text
+                            })
                             
+                            
+                            if blocks[i] != blocks[-1]:
+                                next_index = j+1
+                                next_type = next(iter(schedule_items[next_index][1]['type']))
+                                while next_type == "interstitial":
+                                    if schedule_items[-1] == schedule_items[next_index]:
+                                        break
+                                    next_index += 1
+                                    next_type = next(iter(schedule_items[next_index][1]['type']))
+
+                                print(f"{next_index-j} ENTRIES SKIPPED")
+                                print(next_type)
+                                    
+                                next_time_start = datetime.datetime.strptime(schedule_items[next_index][0], "%Y-%m-%d %H:%M:%S.%f")
+                                if block_end < next_time_start and end_time_obj < block_end:
+                                    next_start = blocks[i+1]['start']
+                                else:
+                                    next_start = next_time_start
+                                time_between = (next_start - end_time_obj).seconds
+                                minutes_between = time_between // 60
+                                print(f"{time_between} SECONDS UNTIL NEXT ENTRY")
+
+                                if time_between > 0 and minutes_between >= 10:
+                                    empty_block_width = calculate_cell_width(minutes_between, cell_width, padding, border)
+                                    empty_block = f"<td class='box {cell_color} dim tall' style='width:{min(empty_block_width,max_width-total_width_used)}px'></td>"
+                                    total_width_used += min(empty_block_width,max_width-total_width_used)
+                                    end_time_obj
+                                    cell_html += empty_block
+                                    schedule_data[ch_num]['html'].append(empty_block)
+                                    schedule_data[ch_num]['empty_block_width'] = min(empty_block_width,max_width-total_width_used)
+                                    
+                                    end_time_obj = end_time_obj + datetime.timedelta(seconds=time_between)
+                            
+                            block_html += cell_html        
                             covered_time = overlap_end
                             total_width_used += total_width
                             block_filled = True
@@ -3104,49 +3199,54 @@ def show_schedule():
                             if i == 5 and cells_created < i:
                                 total_width_used -= (border+padding)*(i-cells_created)'''
                             break
-
+                        elif start_time_obj > block_end:
+                            break
                 '''if not block_filled and total_width_used < max_width:
                     # Add an empty block if no content and if there is space left
                     block_html = f"<td class='box blue tall' style='width:{min(cell_width,max_width-total_width_used)}px'></td>"
                     total_width_used += min(cell_width,max_width-total_width_used)'''
-
+                
                 html_string += block_html
+                channel_data[ch_num][start_time] = block_html
+                
+                
                 block_start = block_end
 
         html_string += '</tr>'
     
-    return render_template('show_schedule.html', kiosk_mode=kiosk_mode, html_string=html_string+time_row, template_files=get_template_files(), live_onload = live_load())
+    return render_template('show_schedule.html', kiosk_mode=kiosk_mode, html_string=html_string+time_row, time_row=time_row, empty_row=empty_row, channel_data=channel_data, schedule_data=schedule_data, template_files=get_template_files(), live_onload = live_load())
 
 def calculate_cell_width(duration_min_total, cell_width, padding, border):
-    # Custom rounding rules for short durations
-    if duration_min_total < 5:
+    # Separate hours from minutes
+    duration_hours = duration_min_total // 60
+    duration_min_remaining = duration_min_total % 60
+    # Rounding rules for remaining minutes
+    if duration_min_remaining < 10:
         duration_min_rounded = 0
-    elif 5 <= duration_min_total <= 18:
+    elif 10 <= duration_min_remaining <= 19:
         duration_min_rounded = 15
-    elif 19 <= duration_min_total <= 30:
+    elif 20 <= duration_min_remaining <= 35:
         duration_min_rounded = 30
-    elif 31 <= duration_min_total <= 47:
+    elif 36 <= duration_min_remaining <= 51:
         duration_min_rounded = 45
-    else:
-        # For durations longer than 30 minutes, round to the nearest 15 minutes
-        duration_min_rounded = math.ceil(duration_min_total / 15) * 15
-    #duration_min_rounded = round(duration_min_total / 15) * 15
-    
+    elif 52 <= duration_min_remaining <= 60:
+        duration_min_rounded = 60
+    duration_min_rounded += duration_hours * 60
     # Calculate the width based on rounded duration
     if duration_min_rounded == 0:
         #entry_width = (cell_width / 2) - (padding + border)  # Half block width
         total_blocks = math.ceil(duration_min_rounded / 15) * 15
         entry_width = total_blocks * cell_width + (total_blocks - 1) * (padding + border)
     elif duration_min_rounded <= 15:
-        entry_width = (cell_width / 2) - (padding + border)  # Half block width
+        entry_width = (cell_width / 2) - (border)  # Half block width
     elif 15 < duration_min_rounded <= 30:
         entry_width = cell_width  # Full block width
     else:
         # For multi-block content
-        total_blocks = round(duration_min_rounded / 30)
+        total_blocks = (duration_min_rounded / 30) 
         entry_width = total_blocks * cell_width + (total_blocks - 1) * (padding + border)
-    total_blocks = math.ceil(duration_min_rounded / 30)/1
-    entry_width = total_blocks * cell_width + (total_blocks - 1) * (padding + border)
+    #total_blocks = round(duration_min_rounded / 30)/1
+    #entry_width = total_blocks * cell_width + (total_blocks - 1) * (padding + border)
     
     return entry_width
 

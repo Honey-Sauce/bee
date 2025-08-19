@@ -1479,7 +1479,10 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                                 #log_schedule_change(f"{round(show_scores[s],5)}: {filtered_similar_shows[s].get('title',s)}")
                                         sorted_show_scores = sorted(filtered_show_scores.items(), key=lambda item: item[1], reverse=True)
                                         total_scores = len(sorted_show_scores)
-                                        top_scores_count = math.ceil(total_scores * (0.1))
+                                        if total_scores <= 10:
+                                            top_scores_count = total_scores
+                                        else:
+                                            top_scores_count = math.ceil(total_scores * (0.1))
                                         top_scores = dict(sorted_show_scores[:top_scores_count])
                                         remaining_scores = dict(sorted_show_scores[top_scores_count:])
 
@@ -1770,6 +1773,8 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                     break
                                 else:
                                     print(f"Same Ratings Shows Count: {len(filtered_similar_shows)}")
+
+                                chosen_show_duration_minutes = chosen_show.get('duration')
                                 all_durations = []
                                 while len(all_durations) < 1:
                                     all_durations = []
@@ -1787,7 +1792,10 @@ def schedule_daily_content(schedule, channel_schedule_file, episode_override, ch
                                             all_durations.append(round(int(int(episode_details['fileinfo']['streamdetails']['video']['durationinseconds']))))
                                 log_schedule_change(f"{chosen_show['title']} Selected from {len(filtered_similar_shows)} options",show_timestamp=False)
                                 print("____________________")
-                                chosen_show_duration = int(statistics.median(all_durations))
+                                if chosen_show_duration_minutes is None:
+                                    chosen_show_duration = int(statistics.median(all_durations))
+                                else:
+                                    chosen_show_duration = int(chosen_show_duration_minutes)*60
                                 if time_slot_duration/3 < chosen_show_duration < time_slot_duration:
                                     series_ids.append(chosen_show_id)
                                     schedule_new_show = 99
