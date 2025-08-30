@@ -156,21 +156,21 @@ def keypress_listener_evdev(overlay_app, update_queue, devices):
                                     if keycode.split('_')[-1].isdigit():  
                                         
                                         if last_pressed is not None:
-                                            if last_pressed[-1] == "-":
-                                                number_pressed = f"{last_pressed[0]}{int(keycode[-1])}"
+                                            if last_pressed[0][-1] == "-" and last_pressed[1] - time.now() <= 10:
+                                                number_pressed = (f"{last_pressed[0]}{int(keycode[-1])}",time.now())
                                                 
                                                 last_pressed = None
                                             else:
-                                                number_pressed = f"{int(keycode[-1])}-"
+                                                number_pressed = (f"{int(keycode[-1])}-",time.now())
                                                 last_pressed = number_pressed
                                         else:
-                                            number_pressed = f"{int(keycode[-1])}-"
+                                            number_pressed = (f"{int(keycode[-1])}-",time.now())
                                             last_pressed = number_pressed
 
-                                        overlay_text(update_queue, number_pressed)
+                                        overlay_text(update_queue, number_pressed[0])
                                             
                                         if last_pressed is None:
-                                            http_request("start_beehive",f"{number_pressed},{drone}")
+                                            http_request("start_beehive",f"{number_pressed[0]},{drone}")
                                             time.sleep(2)
                                             response = requests.get(f"http://{hostname}:{port}/live")
                                             try:
@@ -179,7 +179,7 @@ def keypress_listener_evdev(overlay_app, update_queue, devices):
                                                     for device, live_data in data.items():
                                                         if device == drone:
                                                             #display_text = f"{int(live_data['channel']):02}   {live_data['title'].upper()}"
-                                                            display_text = f"{int(number_pressed):02}   {live_data['title'].upper()}"
+                                                            display_text = f"{int(number_pressed[0]):02}   {live_data['title'].upper()}"
                                                 else:
                                                     display_text = f"ERROR {response.status_code}"
                                             except requests.exceptions.RequestException as e:
@@ -407,7 +407,7 @@ def element_to_dict(element):
         # If the element has no children, just get its text
         result = element.text
             
-def process_key_events(keymap):
+def process_key_events(keymap, time_limit):
     global last_pressed
     global last_volume
     global subtitle_track
@@ -418,6 +418,7 @@ def process_key_events(keymap):
     max_channels = os.environ.get('MAX_CHANNELS','999')
     DESIRED_DIGITS = len(max_channels)
     digit_buffer = []  # To store the pressed digits
+    time_start = time.time()
     while True:
         reconnect_devices(grabbed_devices)
         keycode = get_key_event(grabbed_devices)
@@ -426,6 +427,9 @@ def process_key_events(keymap):
         if keycode is not None:
             if isinstance(keycode, str):
                 if keycode.split('_')[-1].isdigit():  
+                    if time.time() - time_start > time_limit:
+                        digit_buffer = []
+                        time_start = time.time()
                     # Add the digit to the buffer
                     digit_buffer.append(keycode.split('_')[-1])
 
@@ -434,7 +438,9 @@ def process_key_events(keymap):
 
                     while len(partial_number) < DESIRED_DIGITS:
                         partial_number += "-"
+                    time_start = time.time()
                     overlay_text(update_queue, partial_number)
+                    
                     # If the buffer has the desired number of digits, process them
                     if len(digit_buffer) == DESIRED_DIGITS:
                         # Clear the buffer for the next input
@@ -746,7 +752,7 @@ if __name__ == "__main__":
 
     try:
         # Step 2: Listen for keypresses using evdev
-        process_key_events(keymap)
+        process_key_events(keymap, args.time)
     finally:
         # Step 3: Release all devices when done
         ungrab_all_devices(grabbed_devices)
