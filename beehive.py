@@ -368,7 +368,9 @@ def run_vlc_playback(file_info,drone):
     try:
         # Load the media file in VLC
         #status_response = requests.get(vlc_stop_url, auth=('', password))
-        if '"state":"playing"' in status_response.text:
+        state = status_response.json().get("state","")
+        if state=="playing":
+            # enqueue file to playlist
             #current_plid = status_dict.get('currentplid')
             load_command = f"{vlc_url}/requests/status.json?command=in_enqueue&input={media_url}"
             response = requests.get(load_command, auth=('', password))
@@ -380,12 +382,14 @@ def run_vlc_playback(file_info,drone):
                 time.sleep(1)
             print('',end='\r')
             print(f"Playing {file_info['current_item']['title']} on {drone} player")
-            '''if f"\"filename\":{file_info['path']}" in response.text and start_offset > 2:
-               seek_command = f"{vlc_url}/requests/status.json?command=seek&val={start_offset}"
-               requests.get(seek_command, auth=('', password))
-               print(f"Video set to start at {start_offset} seconds.")       '''
-           
-        else:
+        if state=="paused":
+            # enqueue file to playlist
+            #current_plid = status_dict.get('currentplid')
+            load_command = f"{vlc_url}/requests/status.json?command=in_enqueue&input={media_url}"
+            time.sleep(0.05)
+            next_command = f"{vlc_url}/requests/status.json?command=pl_next"
+            print(f"Playing {file_info['current_item']['title']} on {drone} player")
+        elif state=="stopped":
             print("Playing File...")
             clear_response = requests.get(f"{vlc_command_url}?command=pl_empty",auth=('',password))
             time.sleep(0.01)
@@ -397,6 +401,10 @@ def run_vlc_playback(file_info,drone):
             else:
                 print(f"Error: Unable to play media on {Den}. Status code: {response.status_code}")
                 return
+        else:
+            print(f"Unknown VLC state: [{state}], trying to play anyway.")
+            load_command = f"{vlc_url}/requests/status.json?command=in_play&input={media_url}"
+            response = requests.get(load_command, auth=('', password))
 
         # Wait until media is fully loaded before seeking
         media_loaded = False

@@ -506,7 +506,7 @@ def vlcservicegen():
 Description=BROADCAST EMULATION ENGINE CLIENT
 [Service]
 Environment=DISPLAY=:0
-ExecStart=/usr/bin/vlc --intf http --no-osd --http-port {port} --fullscreen --audio-language=eng --no-spu --vout=x11 --http-password={password} --sout-keep --avcodec-hw=any --file-caching=10000 --volume-save --audio-filter=stereo
+ExecStart=/usr/bin/vlc --intf http --no-osd --http-port {port} --fullscreen --audio-language=eng --no-spu --vout=x11 --http-password={password} --sout-keep --avcodec-hw=any --file-caching=10000 --volume-save --audio-filter=stereo --play-and-pause
 Restart=always
 [Install]
 WantedBy=default.target
