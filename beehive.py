@@ -11,7 +11,7 @@ import threading
 import time
 import urllib.parse
 from datetime import datetime, timedelta
-
+sys.stdout.reconfigure(line_buffering=True)
 config = configparser.ConfigParser()
 config.read('config.ini')
 drones = configparser.ConfigParser()
@@ -395,8 +395,8 @@ def run_vlc_playback(file_info,drone):
             time.sleep(0.05)
             next_command = f"{vlc_url}/requests/status.json?command=pl_next"
             print(f"Playing {file_info['current_item']['title']} on {drone} player")
-            play_command = f"{vlc_url}/requests/status.json?command=in_play&input={media_url}"
-            response = requests.get(play_command, auth=('', password))
+            load_command = f"{vlc_url}/requests/status.json?command=in_play&input={media_url}"
+            response = requests.get(load_command, auth=('', password))
         elif "stopped" in state:
             print("Playing File...")
             clear_response = requests.get(f"{vlc_command_url}?command=pl_empty",auth=('',password))
@@ -413,16 +413,29 @@ def run_vlc_playback(file_info,drone):
             print(f"Unknown VLC state: [{state}], trying to play anyway.")
             load_command = f"{vlc_url}/requests/status.json?command=in_play&input={media_url}"
             response = requests.get(load_command, auth=('', password))
-
+        print(response)
         # Wait until media is fully loaded before seeking
         media_loaded = False
+        loops = 0
+        sleep_time = 0.5
+        time_seconds = file_info.get('duration',0)
+        starting_datetime = datetime.now()
+        ending_datetime = datetime.now() + timedelta(seconds=int(time_seconds))
+        print(f"Duration: {time_seconds} seconds")
         while media_loaded is False:  # Retry checking for media load status
             status_response = requests.get(vlc_command_url, auth=('', password))
             if os.path.basename(file_info['path']) in status_response.text and '"state":"playing"' in status_response.text:
                 media_loaded = True
                 break
-            
-            time.sleep(0.5)  # Wait a moment before checking again
+            elif loops==10:
+                response = requests.get(load_command, auth=('', password))
+                print(response)
+                start_offset += loops*sleep_time
+                loops = 0
+            elif datetime.now() >= ending_datetime - timedelta(seconds=2):
+                break
+            time.sleep(sleep_time)  # Wait a moment before checking again
+            loops +=1
             #start_offset += 1
 
         if media_loaded is True:
