@@ -407,7 +407,7 @@ def run_vlc_playback(file_info,drone):
             if response.status_code == 200:
                 print(f"Playing {file_info['current_item']['title']} on {drone} player")
             else:
-                print(f"Error: Unable to play media on {Den}. Status code: {response.status_code}")
+                print(f"Error: Unable to play media on {drone}. Status code: {response.status_code}")
                 return
         else:
             print(f"Unknown VLC state: [{state}], trying to play anyway.")
@@ -496,7 +496,7 @@ def main():
     stop_response = requests.get(f"{vlc_url}/requests/status.json?command=pl_stop",auth=('',password))
     server_prefix = config['Settings']['Library Mount Point']
     client_prefix = drones[sys.argv[2]]['Library Mount Point']
-    
+    try_num = 0
     while True:
         datetime_now = get_time()
         current_time = datetime_now.strftime("%H:%M:%S.%f")
@@ -506,6 +506,7 @@ def main():
         start_time, current_item = get_schedule_item(schedule, datetime_now)
 
         if current_item is not None:
+            try_num = 0
             print(f"Next: {current_item.get('title')}", flush=True)
             end_time = current_item.get('end_time')
             
@@ -595,7 +596,8 @@ def main():
             
         else:
             print("No more scheduled items found. Checking again shortly...", flush=True)
-            time.sleep(1)  # Wait for 1 seconds before checking the schedule again
-
+            time.sleep(try_num*2+0.01)  # Wait before checking the schedule again
+            schedule = load_data(schedule_file) # Reload schedule file
+            try_num += 1
 if __name__ == "__main__":
     main()
