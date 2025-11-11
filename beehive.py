@@ -424,8 +424,12 @@ def run_vlc_playback(file_info,drone):
         print(f"Duration: {time_seconds} seconds")
         while media_loaded is False:  # Retry checking for media load status
             status_response = requests.get(vlc_command_url, auth=('', password))
+            status_response.encoding = 'utf-8'
+            #print(os.path.basename(file_info['path']))
+            #print(f"Status Response: {status_response.text}")
             if os.path.basename(file_info['path']) in status_response.text and '"state":"playing"' in status_response.text:
                 media_loaded = True
+                print(f"{os.path.basename(file_info['path'])} is Playing")
                 break
             elif loops==10:
                 response = requests.get(load_command, auth=('', password))
